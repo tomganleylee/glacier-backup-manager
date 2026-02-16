@@ -41,15 +41,23 @@ export function listDirectory(dirPath: string): FileEntry[] {
         
         if (entry.isDirectory()) {
           let childCount = 0;
+          let dirSize = 0;
           try {
-            childCount = fs.readdirSync(entryPath).filter(n => !n.startsWith('.')).length;
+            const children = fs.readdirSync(entryPath, { withFileTypes: true }).filter(n => !n.name.startsWith('.'));
+            childCount = children.length;
+            // Sum direct file children for a fast shallow size
+            for (const child of children) {
+              if (child.isFile()) {
+                try { dirSize += fs.statSync(path.join(entryPath, child.name)).size; } catch { /* skip */ }
+              }
+            }
           } catch { /* permission denied */ }
-          
+
           return {
             name: entry.name,
             path: relativePath,
             type: 'directory' as const,
-            size: stats.size,
+            size: dirSize,
             modified: stats.mtime.toISOString(),
             children: childCount,
           };

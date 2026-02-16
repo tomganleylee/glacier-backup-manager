@@ -1,4 +1,4 @@
-import { execSync, spawn, ChildProcess } from 'child_process';
+import { execFileSync, spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
 import { getSetting } from './db';
 
@@ -28,7 +28,7 @@ export function getRcloneConfig(): string {
 
 export function writeRcloneConfig(): string {
   const configPath = '/tmp/rclone-glacier.conf';
-  fs.writeFileSync(configPath, getRcloneConfig());
+  fs.writeFileSync(configPath, getRcloneConfig(), { mode: 0o600 });
   return configPath;
 }
 
@@ -39,10 +39,9 @@ export function testConnection(): { success: boolean; message: string } {
     if (!bucket) {
       return { success: false, message: 'No bucket configured' };
     }
-    const result = execSync(
-      `rclone lsd --config ${configPath} glacier:${bucket} 2>&1`,
-      { timeout: 30000, encoding: 'utf-8' }
-    );
+    const result = execFileSync('rclone', [
+      'lsd', '--config', configPath, `glacier:${bucket}`
+    ], { timeout: 30000, encoding: 'utf-8' });
     return { success: true, message: `Connected to ${bucket}. ${result.trim()}` };
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -54,7 +53,7 @@ export function uploadFile(
   localPath: string,
   remotePath: string,
   onProgress?: (progress: RcloneProgress) => void
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; abort?: () => void }> {
   return new Promise((resolve) => {
     const configPath = writeRcloneConfig();
     const bucket = getSetting('aws_bucket') || '';
@@ -112,10 +111,9 @@ export function getRemoteSize(remotePath: string): number {
   try {
     const configPath = writeRcloneConfig();
     const bucket = getSetting('aws_bucket') || '';
-    const result = execSync(
-      `rclone size --config ${configPath} --json glacier:${bucket}/${remotePath} 2>/dev/null`,
-      { timeout: 60000, encoding: 'utf-8' }
-    );
+    const result = execFileSync('rclone', [
+      'size', '--config', configPath, '--json', `glacier:${bucket}/${remotePath}`
+    ], { timeout: 60000, encoding: 'utf-8' });
     const parsed = JSON.parse(result);
     return parsed.bytes || 0;
   } catch {

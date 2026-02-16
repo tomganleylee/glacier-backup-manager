@@ -151,10 +151,10 @@ function runMigrations(db: Database.Database) {
     aws_bucket: '',
     aws_access_key: '',
     aws_secret_key: '',
-    sonarr_url: 'http://192.168.3.98:8989',
-    sonarr_api_key: 'ba3a27d75ab245dd8354f98f400c2010',
-    radarr_url: 'http://192.168.3.119:7878',
-    radarr_api_key: 'a794dc89fe4a4036b41fe6a403d03773',
+    sonarr_url: '',
+    sonarr_api_key: '',
+    radarr_url: '',
+    radarr_api_key: '',
     scheduler_enabled: 'false',
     notification_webhook_url: '',
     notification_email: '',
@@ -176,7 +176,7 @@ export function getSetting(key: string): string | null {
 // Helper to set a setting value
 export function setSetting(key: string, value: string): void {
   getDb().prepare(
-    'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime("now")) ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = datetime("now")'
+    "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = datetime('now')"
   ).run(key, value, value);
 }
 

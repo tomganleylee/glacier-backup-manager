@@ -74,16 +74,19 @@ $script:ShutdownRequested = $false
 $script:CurrentJobId = $null
 
 function Register-ShutdownHandler {
-    # Register a Ctrl+C handler. PowerShell uses the Console.CancelKeyPress
-    # .NET event for this purpose.
-    [Console]::CancelKeyPress.Remove($script:ShutdownDelegate) 2>$null
-    $script:ShutdownDelegate = [ConsoleCancelEventHandler]{
-        param($sender, $e)
-        $e.Cancel = $true
-        $script:ShutdownRequested = $true
-        Write-Log "Shutdown requested (Ctrl+C). Finishing current operation..." -Level "WARN"
+    # Register a Ctrl+C handler using try/catch to avoid strict mode issues
+    try {
+        $script:ShutdownDelegate = [ConsoleCancelEventHandler]{
+            param($sender, $e)
+            $e.Cancel = $true
+            $script:ShutdownRequested = $true
+        }
+        [Console]::add_CancelKeyPress($script:ShutdownDelegate)
     }
-    [Console]::CancelKeyPress.Add($script:ShutdownDelegate)
+    catch {
+        # Fallback: Ctrl+C will just kill the script (originals are still safe)
+        Write-Log "Could not register Ctrl+C handler (non-fatal)" -Level "WARN"
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -136,7 +139,10 @@ function Test-Prerequisites {
     # Verify ffmpeg is available
     Write-Log "Checking ffmpeg availability..."
     try {
+        $prevPref = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
         $version = & $FfmpegPath -version 2>&1 | Select-Object -First 1
+        $ErrorActionPreference = $prevPref
         Write-Log "ffmpeg found: $version" -Level "OK"
     }
     catch {
@@ -146,7 +152,10 @@ function Test-Prerequisites {
 
     # Verify NVENC support by checking for hevc_nvenc encoder
     Write-Log "Checking NVENC encoder support..."
+    $prevPref = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     $encoders = & $FfmpegPath -encoders 2>&1 | Select-String "hevc_nvenc"
+    $ErrorActionPreference = $prevPref
     if ($encoders) {
         Write-Log "NVENC HEVC encoder available" -Level "OK"
     }
@@ -193,16 +202,28 @@ function Get-NextJob {
         Job object if available, $null otherwise.
     #>
     try {
-        $response = Invoke-RestMethod -Uri "$ServerUrl/api/transcode/worker" -Method Get -TimeoutSec 15
-        if ($null -eq $response -or ($response.PSObject.Properties.Name -contains 'error')) {
+        # Use Invoke-WebRequest instead of Invoke-RestMethod to get raw JSON,
+        # then parse manually to avoid PowerShell strict mode issues with null properties
+        $webResponse = Invoke-WebRequest -Uri "$ServerUrl/api/transcode/worker" -Method Get -TimeoutSec 15 -UseBasicParsing
+        $body = $webResponse.Content
+
+        # Server returns "null" when no jobs available
+        if ([string]::IsNullOrWhiteSpace($body) -or $body.Trim() -eq "null") {
             return $null
         }
-        # The server returns null (empty body) when no jobs are available.
-        # Invoke-RestMethod may return an empty string or $null in that case.
-        if (-not $response.id) {
+
+        $job = $body | ConvertFrom-Json
+        if ($null -eq $job) {
             return $null
         }
-        return $response
+
+        # Verify it has an id (it's a real job, not an error)
+        $idProp = $job.PSObject.Properties.Match('id')
+        if ($idProp.Count -eq 0) {
+            return $null
+        }
+
+        return $job
     }
     catch {
         Write-Log "Error polling for jobs: $($_.Exception.Message)" -Level "WARN"
@@ -414,7 +435,10 @@ function Invoke-Transcode {
     # -------------------------------------------------------------------
     $totalDurationSeconds = 0
     try {
+        $prevPref = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
         $probeOutput = & $FfmpegPath -i $InputPath 2>&1 | Out-String
+        $ErrorActionPreference = $prevPref
         if ($probeOutput -match "Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})") {
             $totalDurationSeconds = [int]$Matches[1] * 3600 + [int]$Matches[2] * 60 + [int]$Matches[3] + [int]$Matches[4] / 100.0
             $durationFormatted = "{0:D2}:{1:D2}:{2:D2}" -f [int]$Matches[1], [int]$Matches[2], [int]$Matches[3]
@@ -740,7 +764,7 @@ function Start-Worker {
     Register-ShutdownHandler
 
     Write-Log "Worker started. Polling for jobs every ${PollInterval}s. Press Ctrl+C to stop." -Level "OK"
-    Write-Log ""
+    Write-Host ""
 
     $jobsCompleted = 0
     $jobsFailed = 0

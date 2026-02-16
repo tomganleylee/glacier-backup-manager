@@ -29,6 +29,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showAwsGuide, setShowAwsGuide] = useState(false);
 
   useEffect(() => {
     fetch('/api/settings')
@@ -95,7 +96,90 @@ export default function SettingsPage() {
       <div className="space-y-8">
         {/* AWS Section */}
         <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">AWS Glacier Configuration</h2>
+          <div className="flex items-start justify-between mb-4">
+            <h2 className="text-lg font-semibold">AWS Glacier Configuration</h2>
+            <button
+              onClick={() => setShowAwsGuide(prev => !prev)}
+              className="text-xs text-blue-400 hover:text-blue-300 underline"
+            >
+              {showAwsGuide ? 'Hide setup guide' : 'How to set this up?'}
+            </button>
+          </div>
+
+          {showAwsGuide && (
+            <div className="mb-6 p-4 bg-gray-950 border border-gray-800 rounded-lg text-sm space-y-4">
+              <h3 className="font-semibold text-blue-400">AWS S3 Glacier Deep Archive Setup Guide</h3>
+
+              <div>
+                <p className="font-medium text-white mb-1">Step 1: Create an S3 Bucket</p>
+                <ol className="list-decimal list-inside text-gray-400 space-y-1 ml-2">
+                  <li>Go to <span className="text-blue-400">AWS Console &rarr; S3</span></li>
+                  <li>Click <span className="text-white">Create bucket</span></li>
+                  <li>Enter a bucket name (e.g. <span className="text-yellow-300">my-nas-glacier-backup</span>)</li>
+                  <li>Select your region (e.g. <span className="text-yellow-300">eu-west-2</span> for London)</li>
+                  <li>Leave all other settings as default and click <span className="text-white">Create bucket</span></li>
+                </ol>
+                <p className="text-gray-500 mt-1 text-xs">Note: You do NOT need to set the default storage class. The app uses rclone which specifies Glacier Deep Archive per upload.</p>
+              </div>
+
+              <div>
+                <p className="font-medium text-white mb-1">Step 2: Create an IAM User</p>
+                <ol className="list-decimal list-inside text-gray-400 space-y-1 ml-2">
+                  <li>Go to <span className="text-blue-400">AWS Console &rarr; IAM &rarr; Users</span></li>
+                  <li>Click <span className="text-white">Create user</span></li>
+                  <li>Name it something like <span className="text-yellow-300">glacier-backup-uploader</span></li>
+                  <li>Click <span className="text-white">Next</span>, then <span className="text-white">Attach policies directly</span></li>
+                  <li>Search for and select <span className="text-yellow-300">AmazonS3FullAccess</span> (or create a custom policy for just your bucket)</li>
+                  <li>Click <span className="text-white">Next</span>, then <span className="text-white">Create user</span></li>
+                </ol>
+              </div>
+
+              <div>
+                <p className="font-medium text-white mb-1">Step 3: Create Access Keys</p>
+                <ol className="list-decimal list-inside text-gray-400 space-y-1 ml-2">
+                  <li>Click on the user you just created</li>
+                  <li>Go to <span className="text-blue-400">Security credentials</span> tab</li>
+                  <li>Scroll down to <span className="text-white">Access keys</span> and click <span className="text-white">Create access key</span></li>
+                  <li>Select <span className="text-yellow-300">Application running outside AWS</span>, click Next</li>
+                  <li>Click <span className="text-white">Create access key</span></li>
+                  <li>Copy the <span className="text-green-400">Access key ID</span> and <span className="text-green-400">Secret access key</span> - paste them below</li>
+                </ol>
+                <p className="text-red-400 mt-1 text-xs">Important: Save the secret key now! You cannot view it again after closing this page.</p>
+              </div>
+
+              <div>
+                <p className="font-medium text-white mb-1">Step 4: Fill in the fields below and click Save</p>
+                <p className="text-gray-400">The app will test the connection when you save. If successful, you are ready to start uploading.</p>
+              </div>
+
+              <div className="pt-2 border-t border-gray-800">
+                <p className="font-medium text-white mb-1">Costs (Glacier Deep Archive)</p>
+                <ul className="text-gray-400 space-y-0.5 ml-2">
+                  <li>&bull; <span className="text-white">Storage:</span> ~$0.99/TB/month (~$1/TB)</li>
+                  <li>&bull; <span className="text-white">Upload (PUT):</span> $0.05 per 1,000 requests (one-time)</li>
+                  <li>&bull; <span className="text-white">Retrieval:</span> $0.02/GB + 12-48 hour delay (emergency use only)</li>
+                  <li>&bull; <span className="text-white">Example:</span> 9 TB backup = ~$9/month, ~$108/year</li>
+                </ul>
+              </div>
+
+              <div className="pt-2 border-t border-gray-800">
+                <p className="font-medium text-white mb-1">Optional: Restrict permissions to one bucket</p>
+                <p className="text-gray-400 mb-2">Instead of AmazonS3FullAccess, create a custom IAM policy:</p>
+                <pre className="bg-gray-900 p-3 rounded text-xs text-gray-300 overflow-x-auto">{`{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["s3:PutObject", "s3:GetObject", "s3:ListBucket", "s3:DeleteObject"],
+    "Resource": [
+      "arn:aws:s3:::YOUR-BUCKET-NAME",
+      "arn:aws:s3:::YOUR-BUCKET-NAME/*"
+    ]
+  }]
+}`}</pre>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SettingField label="Access Key ID" name="aws_access_key" value={settings.aws_access_key || ''} onChange={updateField} placeholder="AKIA..." />
             <SettingField label="Secret Access Key" name="aws_secret_key" value={settings.aws_secret_key || ''} type="password" onChange={updateField} placeholder="Secret key" />

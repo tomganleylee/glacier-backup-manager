@@ -5,18 +5,23 @@ import { getDb } from '@/lib/db';
 export async function GET() {
   try {
     const db = getDb();
-    const job = db.prepare(
-      "SELECT * FROM transcode_jobs WHERE status = 'queued' ORDER BY created_at ASC LIMIT 1"
-    ).get();
-    
-    if (job) {
-      // Mark as assigned
-      db.prepare(
-        "UPDATE transcode_jobs SET status = 'assigned', assigned_at = datetime('now') WHERE id = ?"
-      ).run((job as { id: number }).id);
-    }
-    
-    return NextResponse.json(job || null);
+    // Atomic claim: UPDATE + SELECT in a transaction to prevent two workers claiming the same job
+    const claimJob = db.transaction(() => {
+      const job = db.prepare(
+        "SELECT * FROM transcode_jobs WHERE status = 'queued' ORDER BY created_at ASC LIMIT 1"
+      ).get() as Record<string, unknown> | undefined;
+
+      if (job) {
+        db.prepare(
+          "UPDATE transcode_jobs SET status = 'assigned', assigned_at = datetime('now') WHERE id = ?"
+        ).run(job.id);
+        return { ...job, status: 'assigned' };
+      }
+      return null;
+    });
+
+    const job = claimJob();
+    return NextResponse.json(job);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: msg }, { status: 500 });

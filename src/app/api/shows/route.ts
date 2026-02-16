@@ -47,7 +47,7 @@ export async function PATCH(request: Request) {
     const values: (string | number)[] = [];
     
     for (const [key, value] of Object.entries(updates)) {
-      if (['backup_enabled', 'keep_best_quality', 'rarity', 'rarity_score', 'priority'].includes(key)) {
+      if (['backup_enabled', 'keep_best_quality', 'rarity', 'rarity_score'].includes(key)) {
         setClauses.push(key + ' = ?');
         values.push(value as string | number);
       }
