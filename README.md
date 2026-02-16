@@ -95,12 +95,10 @@ cd /opt/glacier-backup-manager
 bash scripts/setup-lxc.sh
 ```
 
-The setup script installs Node.js 20, rclone, NFS client, and mounts your NAS.
+The setup script installs Node.js 20, rclone, NFS client, builds the app, and creates a systemd service. It will prompt you for your NAS IP and share path interactively, or you can pass them as environment variables:
 
-**Important:** Edit `scripts/setup-lxc.sh` first to set your NAS IP and share path:
 ```bash
-NAS_IP="192.168.x.x"          # Your Unraid NAS IP
-NAS_SHARE="/mnt/user/sharename" # The NFS export path on Unraid
+NAS_IP=192.168.x.x NAS_SHARE=/mnt/user/sharename bash scripts/setup-lxc.sh
 ```
 
 ### Option B: Manual Installation
@@ -295,6 +293,23 @@ Upload timeline (8-hour nightly window):
 | 30 Mbps | ~83 nights | ~46 nights |
 | 100 Mbps | ~25 nights | ~14 nights |
 
+## Using with Claude Code
+
+This project was built with [Claude Code](https://claude.com/claude-code) and includes a `CLAUDE.md` file that gives Claude full context about the infrastructure, API endpoints, database schema, and deployment process.
+
+With Claude Code, you can manage your backup system conversationally:
+
+```
+> "Check the backup status and tell me how many files uploaded overnight"
+> "Queue all my photos for backup with high priority"
+> "The scheduler stopped — restart it and check for errors"
+> "How much is Glacier costing me this month?"
+```
+
+Claude Code can SSH into the LXC, query the database, call API endpoints, deploy code changes, and troubleshoot issues — all from your terminal. The `CLAUDE.md` file tells it how to connect to your infrastructure so it can operate autonomously.
+
+To get started, install [Claude Code](https://claude.com/claude-code) and open this project directory. Claude will read `CLAUDE.md` automatically and understand how to interact with your backup system.
+
 ## Contributing
 
 1. Fork the repo
@@ -302,6 +317,12 @@ Upload timeline (8-hour nightly window):
 3. Commit your changes
 4. Push to the branch
 5. Open a Pull Request
+
+## Built With
+
+This project was built with [Claude Code](https://claude.com/claude-code) by Anthropic.
+
+Check out [Kolva](https://kolva.io) — an AI-powered meeting transcription platform with pay-per-hour pricing, plus built-in tasks, documents, and notes. If you're managing a homelab, you probably have too many side projects too.
 
 ## License
 
