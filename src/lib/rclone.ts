@@ -22,6 +22,7 @@ export function getRcloneConfig(): string {
     `access_key_id = ${accessKey}`,
     `secret_access_key = ${secretKey}`,
     `region = ${region}`,
+    `location_constraint = ${region}`,
     'storage_class = DEEP_ARCHIVE',
   ].join('\n');
 }
@@ -59,37 +60,72 @@ export function uploadFile(
     const bucket = getSetting('aws_bucket') || '';
     const bwLimit = getSetting('bandwidth_limit_mbps') || '3';
 
+    // Use 'copyto' for files (preserves exact destination path)
+    // Use 'copy' for directories (copies contents into destination)
+    const isFile = !fs.statSync(localPath, { throwIfNoEntry: false })?.isDirectory();
+    const command = isFile ? 'copyto' : 'copy';
+
     const args = [
-      'copy',
+      command,
       '--config', configPath,
       '--bwlimit', `${bwLimit}M`,
-      '--progress',
       '--stats', '2s',
       '--stats-one-line',
+      '--stats-log-level', 'NOTICE',
+      '--use-json-log',
+      '-v',
       localPath,
       `glacier:${bucket}/${remotePath}`,
     ];
 
     const proc: ChildProcess = spawn('rclone', args);
     let lastError = '';
+    let stderrBuffer = '';
 
     proc.stderr?.on('data', (data: Buffer) => {
-      const line = data.toString();
-      lastError += line;
+      const chunk = data.toString();
+      lastError += chunk;
+      stderrBuffer += chunk;
 
-      // Parse rclone progress output
-      const speed = line.match(/(\d+\.\d+\s*\w+\/s)/);
-      const eta = line.match(/ETA\s+(\S+)/);
-      const pct = line.match(/(\d+)%/);
+      // Process complete lines (JSON log entries end with newline)
+      const lines = stderrBuffer.split('\n');
+      stderrBuffer = lines.pop() || ''; // Keep incomplete line in buffer
 
-      if (onProgress && pct) {
-        onProgress({
-          bytes: 0,
-          totalBytes: 0,
-          speed: speed?.[1] || '',
-          eta: eta?.[1] || '',
-          percentage: parseInt(pct[1]),
-        });
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const entry = JSON.parse(line);
+          // rclone JSON stats messages have msg like "Transferred: 10.000 MiB / 176.000 MiB, 6%, 2.500 MiB/s, ETA 1m6s"
+          if (entry.msg && onProgress) {
+            const msg = entry.msg;
+            const speed = msg.match(/([\d.]+\s*\w+\/s)/);
+            const eta = msg.match(/ETA\s+(\S+)/);
+            const pct = msg.match(/(\d+)%/);
+            if (pct) {
+              onProgress({
+                bytes: 0,
+                totalBytes: 0,
+                speed: speed?.[1] || '',
+                eta: eta?.[1] || '',
+                percentage: parseInt(pct[1]),
+              });
+            }
+          }
+        } catch {
+          // Non-JSON line — try direct regex on raw text
+          const speed = line.match(/([\d.]+\s*\w+\/s)/);
+          const eta = line.match(/ETA\s+(\S+)/);
+          const pct = line.match(/(\d+)%/);
+          if (onProgress && pct) {
+            onProgress({
+              bytes: 0,
+              totalBytes: 0,
+              speed: speed?.[1] || '',
+              eta: eta?.[1] || '',
+              percentage: parseInt(pct[1]),
+            });
+          }
+        }
       }
     });
 

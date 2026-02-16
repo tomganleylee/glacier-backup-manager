@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getUploadStats } from '@/lib/uploader';
 import { getSchedulerStatus } from '@/lib/scheduler';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const stats = getUploadStats();

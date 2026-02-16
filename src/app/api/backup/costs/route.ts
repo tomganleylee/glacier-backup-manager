@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 const GLACIER_DEEP_ARCHIVE_PER_GB_MONTH = 0.00099;
 const PUT_REQUEST_COST_PER_1000 = 0.05;
 const BYTES_PER_GB = 1_073_741_824;

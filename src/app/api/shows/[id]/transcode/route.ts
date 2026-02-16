@@ -3,6 +3,8 @@ import { getDb, getSetting } from '@/lib/db';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic';
+
 const VIDEO_EXTENSIONS = new Set(['.mkv', '.mp4', '.avi', '.m4v', '.wmv', '.ts', '.flv', '.mov']);
 
 function findVideoFiles(dir: string): string[] {

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getDb, getSetting } from '@/lib/db';
 import { getSchedulerStatus } from '@/lib/scheduler';
 
+export const dynamic = 'force-dynamic';
+
 interface ChatMessage {
   role: string;
   content: string;
@@ -14,7 +16,31 @@ interface AssistantRequest {
 
 interface AnthropicResponse {
   content: { type: string; text: string }[];
+  usage?: { input_tokens: number; output_tokens: number };
+  model?: string;
   error?: { message: string };
+}
+
+// Pricing per million tokens (USD)
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  'claude-sonnet-4-5-20250929': { input: 3, output: 15 },
+  'claude-haiku-4-5-20251001': { input: 0.80, output: 4 },
+  'claude-opus-4-6': { input: 15, output: 75 },
+  // Older models
+  'claude-3-5-sonnet-20241022': { input: 3, output: 15 },
+  'claude-3-5-haiku-20241022': { input: 0.80, output: 4 },
+};
+
+function calculateCost(model: string, inputTokens: number, outputTokens: number): number {
+  const pricing = MODEL_PRICING[model] || MODEL_PRICING['claude-sonnet-4-5-20250929'];
+  return (inputTokens * pricing.input + outputTokens * pricing.output) / 1_000_000;
+}
+
+function getModelDisplayName(model: string): string {
+  if (model.includes('opus')) return 'Claude Opus 4.6';
+  if (model.includes('sonnet')) return 'Claude Sonnet 4.5';
+  if (model.includes('haiku')) return 'Claude Haiku 4.5';
+  return model;
 }
 
 function gatherSystemContext(): string {
@@ -157,9 +183,89 @@ export async function POST(request: Request) {
       .map((block) => block.text)
       .join('');
 
+    // Calculate and store usage
+    const inputTokens = data.usage?.input_tokens ?? 0;
+    const outputTokens = data.usage?.output_tokens ?? 0;
+    const usedModel = data.model || model;
+    const cost = calculateCost(usedModel, inputTokens, outputTokens);
+
+    if (inputTokens > 0 || outputTokens > 0) {
+      const db = getDb();
+      db.prepare(
+        "INSERT INTO chat_usage (model, input_tokens, output_tokens, cost_usd) VALUES (?, ?, ?, ?)"
+      ).run(usedModel, inputTokens, outputTokens, cost);
+    }
+
     return NextResponse.json({
       role: 'assistant',
       content: assistantText,
+      usage: {
+        model: usedModel,
+        model_display: getModelDisplayName(usedModel),
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        cost_usd: cost,
+      },
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+// GET endpoint to retrieve usage stats
+export async function GET() {
+  try {
+    const db = getDb();
+
+    // All-time totals
+    const allTime = db.prepare(
+      'SELECT COUNT(*) as messages, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, SUM(cost_usd) as total_cost FROM chat_usage'
+    ).get() as { messages: number; input_tokens: number | null; output_tokens: number | null; total_cost: number | null };
+
+    // Today's totals
+    const today = db.prepare(
+      "SELECT COUNT(*) as messages, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, SUM(cost_usd) as total_cost FROM chat_usage WHERE created_at >= date('now')"
+    ).get() as { messages: number; input_tokens: number | null; output_tokens: number | null; total_cost: number | null };
+
+    // Last 7 days
+    const week = db.prepare(
+      "SELECT COUNT(*) as messages, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, SUM(cost_usd) as total_cost FROM chat_usage WHERE created_at >= date('now', '-7 days')"
+    ).get() as { messages: number; input_tokens: number | null; output_tokens: number | null; total_cost: number | null };
+
+    // Per-model breakdown
+    const byModel = db.prepare(
+      'SELECT model, COUNT(*) as messages, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, SUM(cost_usd) as total_cost FROM chat_usage GROUP BY model'
+    ).all() as { model: string; messages: number; input_tokens: number; output_tokens: number; total_cost: number }[];
+
+    const configuredModel = getSetting('claude_model') || 'claude-sonnet-4-5-20250929';
+
+    return NextResponse.json({
+      configured_model: configuredModel,
+      configured_model_display: getModelDisplayName(configuredModel),
+      pricing: MODEL_PRICING,
+      all_time: {
+        messages: allTime.messages,
+        input_tokens: allTime.input_tokens ?? 0,
+        output_tokens: allTime.output_tokens ?? 0,
+        total_cost: allTime.total_cost ?? 0,
+      },
+      today: {
+        messages: today.messages,
+        input_tokens: today.input_tokens ?? 0,
+        output_tokens: today.output_tokens ?? 0,
+        total_cost: today.total_cost ?? 0,
+      },
+      week: {
+        messages: week.messages,
+        input_tokens: week.input_tokens ?? 0,
+        output_tokens: week.output_tokens ?? 0,
+        total_cost: week.total_cost ?? 0,
+      },
+      by_model: byModel.map(m => ({
+        ...m,
+        model_display: getModelDisplayName(m.model),
+      })),
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Unknown error';

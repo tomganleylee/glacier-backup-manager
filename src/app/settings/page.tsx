@@ -257,7 +257,20 @@ export default function SettingsPage() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SettingField label="Claude API Key" name="claude_api_key" value={settings.claude_api_key || ''} type="password" onChange={updateField} placeholder="sk-ant-..." />
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Model</label>
+              <select
+                value={settings.claude_model || 'claude-sonnet-4-5-20250929'}
+                onChange={e => updateField('claude_model', e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+              >
+                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — $0.80/$4 per MTok (fastest, cheapest)</option>
+                <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 — $3/$15 per MTok (recommended)</option>
+                <option value="claude-opus-4-6">Claude Opus 4.6 — $15/$75 per MTok (most capable)</option>
+              </select>
+            </div>
           </div>
+          <p className="text-xs text-gray-600 mt-3">Cost tracking is shown on the AI Assistant page. Pricing: input/output per million tokens.</p>
         </section>
       </div>
     </div>

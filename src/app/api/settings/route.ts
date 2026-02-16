@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getAllSettings, setSetting } from '@/lib/db';
 import { testConnection } from '@/lib/rclone';
 
+export const dynamic = 'force-dynamic';
+
 const SENSITIVE_KEYS = ['aws_access_key', 'aws_secret_key', 'sonarr_api_key', 'radarr_api_key', 'claude_api_key'];
 
 export async function GET() {

@@ -2,6 +2,19 @@
 
 import { useEffect, useState } from 'react';
 
+interface LiveUpload {
+  currentFile: string;
+  speed: string;
+  percentage: number;
+  eta: string;
+  startedAt: number;
+}
+
+interface SpeedSample {
+  time: number;
+  bytesPerSec: number;
+}
+
 interface Stats {
   totalItems: number;
   uploaded: number;
@@ -12,6 +25,8 @@ interface Stats {
   uploadedBytes: number;
   todayBytes: number;
   todayFiles: number;
+  liveUpload: LiveUpload | null;
+  speedHistory: SpeedSample[];
 }
 
 interface SchedulerStatus {
@@ -52,6 +67,92 @@ function StatCard({ label, value, subtext, color }: { label: string; value: stri
   );
 }
 
+function formatSpeed(bytesPerSec: number): string {
+  const mbps = (bytesPerSec * 8) / 1_000_000;
+  if (mbps < 0.1) return mbps.toFixed(2) + ' Mbps';
+  if (mbps < 10) return mbps.toFixed(1) + ' Mbps';
+  return mbps.toFixed(0) + ' Mbps';
+}
+
+function SpeedGraph({ samples }: { samples: SpeedSample[] }) {
+  if (samples.length < 2) return null;
+
+  const W = 600, H = 160, PAD_L = 60, PAD_R = 10, PAD_T = 10, PAD_B = 30;
+  const gw = W - PAD_L - PAD_R;
+  const gh = H - PAD_T - PAD_B;
+
+  const maxSpeed = Math.max(...samples.map(s => s.bytesPerSec), 1);
+  // Round up max to a nice number for Y-axis
+  const niceMax = (() => {
+    const mag = Math.pow(10, Math.floor(Math.log10(maxSpeed)));
+    return Math.ceil(maxSpeed / mag) * mag;
+  })();
+
+  const minTime = samples[0].time;
+  const maxTime = samples[samples.length - 1].time;
+  const timeRange = Math.max(maxTime - minTime, 1);
+
+  const points = samples.map(s => ({
+    x: PAD_L + ((s.time - minTime) / timeRange) * gw,
+    y: PAD_T + gh - (s.bytesPerSec / niceMax) * gh,
+  }));
+
+  // Build SVG path for the line
+  const linePath = points.map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`)).join(' ');
+  // Build area fill
+  const areaPath = linePath + ` L${points[points.length-1].x},${PAD_T + gh} L${points[0].x},${PAD_T + gh} Z`;
+
+  // Y-axis labels (0, 25%, 50%, 75%, 100% of niceMax)
+  const yLabels = [0, 0.25, 0.5, 0.75, 1].map(f => ({
+    value: niceMax * f,
+    y: PAD_T + gh - f * gh,
+  }));
+
+  // Time labels
+  const elapsed = (maxTime - minTime) / 1000;
+  const timeLabel = elapsed < 60 ? `${Math.round(elapsed)}s ago` : `${Math.round(elapsed / 60)}m ago`;
+
+  // Current speed
+  const currentSpeed = samples[samples.length - 1].bytesPerSec;
+  const avgSpeed = samples.reduce((sum, s) => sum + s.bytesPerSec, 0) / samples.length;
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mt-6">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold">Upload Speed</h2>
+        <div className="flex gap-4 text-sm">
+          <span className="text-gray-400">Current: <span className="text-green-400 font-medium">{formatSpeed(currentSpeed)}</span></span>
+          <span className="text-gray-400">Avg: <span className="text-blue-400 font-medium">{formatSpeed(avgSpeed)}</span></span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: '200px' }}>
+        {/* Grid lines */}
+        {yLabels.map((l, i) => (
+          <g key={i}>
+            <line x1={PAD_L} y1={l.y} x2={W - PAD_R} y2={l.y} stroke="#374151" strokeWidth={0.5} />
+            <text x={PAD_L - 6} y={l.y + 4} textAnchor="end" fill="#6b7280" fontSize="10">
+              {formatSpeed(l.value)}
+            </text>
+          </g>
+        ))}
+        {/* Area fill with gradient */}
+        <defs>
+          <linearGradient id="speedGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill="url(#speedGrad)" />
+        {/* Line */}
+        <path d={linePath} fill="none" stroke="#22c55e" strokeWidth={2} />
+        {/* X-axis labels */}
+        <text x={PAD_L} y={H - 5} fill="#6b7280" fontSize="10">{timeLabel}</text>
+        <text x={W - PAD_R} y={H - 5} textAnchor="end" fill="#6b7280" fontSize="10">now</text>
+      </svg>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
@@ -77,9 +178,10 @@ export default function Dashboard() {
       }
     }
     fetchStatus();
-    const interval = setInterval(fetchStatus, 10000);
+    // Poll faster when uploading (3s) vs idle (10s)
+    const interval = setInterval(fetchStatus, stats?.liveUpload ? 3000 : 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [stats?.liveUpload]);
 
   async function toggleScheduler() {
     if (!scheduler) return;
@@ -175,6 +277,35 @@ export default function Dashboard() {
             <p className="font-medium">{scheduler?.bandwidthLimit} Mbps</p>
           </div>
         </div>
+        {/* Live upload speed */}
+        {stats?.liveUpload && (
+          <div className="mt-4 pt-4 border-t border-gray-800">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-sm font-medium text-green-400">Uploading now</span>
+              {stats.liveUpload.speed && (
+                <span className="text-sm font-bold text-white ml-auto">{stats.liveUpload.speed}</span>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 truncate mb-2" title={stats.liveUpload.currentFile}>
+              {stats.liveUpload.currentFile}
+            </p>
+            {stats.liveUpload.percentage > 0 && (
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 rounded-full transition-all duration-1000"
+                    style={{ width: stats.liveUpload.percentage + '%' }}
+                  />
+                </div>
+                <span className="text-xs text-gray-400 w-10 text-right">{stats.liveUpload.percentage}%</span>
+                {stats.liveUpload.eta && (
+                  <span className="text-xs text-gray-500">ETA {stats.liveUpload.eta}</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         {stats && stats.todayBytes > 0 && (
           <div className="mt-4 pt-4 border-t border-gray-800 text-sm">
             <p className="text-gray-400">
@@ -183,6 +314,11 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Speed graph (visible when uploading or recent history exists) */}
+      {stats?.speedHistory && stats.speedHistory.length >= 2 && (
+        <SpeedGraph samples={stats.speedHistory} />
+      )}
 
       {/* Cost & ETA */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">

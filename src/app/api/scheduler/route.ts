@@ -3,6 +3,8 @@ import { getSchedulerStatus, abortCurrentUpload, startSchedulerLoop, stopSchedul
 import { setSetting } from '@/lib/db';
 import { processQueue } from '@/lib/uploader';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const status = getSchedulerStatus();
@@ -31,6 +33,13 @@ export async function POST(request: Request) {
       stopSchedulerLoop();
       abortCurrentUpload();
       return NextResponse.json({ success: true, message: 'Scheduler stopped' });
+    }
+
+    if (body.action === 'force') {
+      // Force process queue NOW regardless of upload window (for testing)
+      console.log('[Scheduler] Force processing queue (ignoring upload window)');
+      processQueue({ force: true }).catch(console.error);
+      return NextResponse.json({ success: true, message: 'Force processing started (ignoring upload window)' });
     }
 
     if (body.action === 'update') {

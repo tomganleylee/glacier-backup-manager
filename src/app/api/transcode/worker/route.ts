@@ -1,5 +1,24 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, getSetting } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
+
+// Convert various NAS path formats to a relative path for backup_items
+function toRelativePath(absPath: string): string {
+  const nasMount = getSetting('nas_mount_path') || '/mnt/nas';
+  const prefixes = [
+    '/mnt/user/noobnoob/', // Unraid internal path (used by Sonarr/worker)
+    '/mnt/noobnoob/',      // Sonarr path variant
+    nasMount + '/',         // LXC NAS mount
+  ];
+  for (const prefix of prefixes) {
+    if (absPath.startsWith(prefix)) {
+      return absPath.slice(prefix.length);
+    }
+  }
+  // If no prefix matched, return as-is (strip leading slash)
+  return absPath.replace(/^\/+/, '');
+}
 
 // GET: Worker polls for next available job
 export async function GET() {
@@ -34,11 +53,11 @@ export async function POST(request: Request) {
     const db = getDb();
     const body = await request.json();
     const { id, status, progress, output_path, transcoded_size, error: errorMsg } = body;
-    
+
     if (!id) {
       return NextResponse.json({ error: 'Missing job id' }, { status: 400 });
     }
-    
+
     if (status === 'transcoding') {
       db.prepare(
         'UPDATE transcode_jobs SET status = ?, progress = ? WHERE id = ?'
@@ -47,12 +66,24 @@ export async function POST(request: Request) {
       db.prepare(
         "UPDATE transcode_jobs SET status = 'completed', progress = 100, output_path = ?, transcoded_size = ?, completed_at = datetime('now') WHERE id = ?"
       ).run(output_path, transcoded_size || 0, id);
+
+      // Auto-queue the transcoded file for Glacier upload
+      if (output_path) {
+        const relativePath = toRelativePath(output_path);
+        const fileSize = transcoded_size || 0;
+
+        db.prepare(
+          'INSERT OR IGNORE INTO backup_items (path, type, size_bytes, priority, status) VALUES (?, ?, ?, ?, ?)'
+        ).run(relativePath, 'file', fileSize, 2, 'pending');
+
+        console.log(`[Transcode] Auto-queued for backup: ${relativePath} (${fileSize} bytes)`);
+      }
     } else if (status === 'failed') {
       db.prepare(
         "UPDATE transcode_jobs SET status = 'failed', error = ?, completed_at = datetime('now') WHERE id = ?"
       ).run(errorMsg || 'Unknown error', id);
     }
-    
+
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Unknown error';

@@ -123,9 +123,19 @@ function runMigrations(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_shows_backup ON shows(backup_enabled);
     CREATE INDEX IF NOT EXISTS idx_upload_log_status ON upload_log(status);
     CREATE INDEX IF NOT EXISTS idx_transcode_jobs_status ON transcode_jobs(status);
+    CREATE TABLE IF NOT EXISTS chat_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      model TEXT NOT NULL,
+      input_tokens INTEGER NOT NULL DEFAULT 0,
+      output_tokens INTEGER NOT NULL DEFAULT 0,
+      cost_usd REAL NOT NULL DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE INDEX IF NOT EXISTS idx_manifest_type ON manifest(type);
     CREATE INDEX IF NOT EXISTS idx_manifest_backed_up ON manifest(backed_up);
     CREATE INDEX IF NOT EXISTS idx_transcode_profiles_default ON transcode_profiles(is_default);
+    CREATE INDEX IF NOT EXISTS idx_chat_usage_created ON chat_usage(created_at);
   `);
 
   // Seed default transcode profiles
@@ -161,6 +171,7 @@ function runMigrations(db: Database.Database) {
     notification_on_complete: 'false',
     notification_on_error: 'true',
     claude_api_key: '',
+    claude_model: 'claude-sonnet-4-5-20250929',
   };
   for (const [key, value] of Object.entries(defaults)) {
     insertSetting.run(key, value);

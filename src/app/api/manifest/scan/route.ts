@@ -3,6 +3,8 @@ import { getDb, getSetting } from '@/lib/db';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic';
+
 function categorize(dirPath: string): string {
   const lower = dirPath.toLowerCase();
   if (lower.includes('series')) return 'series';

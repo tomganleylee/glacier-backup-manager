@@ -6,10 +6,9 @@ Built for people who want complete control over what gets backed up, when it upl
 
 ## Screenshots
 
-Dashboard with real-time upload progress, Glacier cost tracking, and ETA:
-```
-http://<your-ip>:3000
-```
+![Dashboard](docs/dashboard.png)
+
+*Dashboard with real-time upload speed graph, queue progress, Glacier cost tracking, and estimated completion.*
 
 ## Features
 

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getDb, getSetting } from '@/lib/db';
 import { scoreRarity } from '@/lib/constants';
 
+export const dynamic = 'force-dynamic';
+
 interface SonarrSeries {
   id: number;
   title: string;
