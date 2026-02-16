@@ -24,6 +24,8 @@ function formatBytes(bytes: number): string {
 export default function ManifestPage() {
   const [items, setItems] = useState<ManifestItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scanning, setScanning] = useState(false);
+  const [scanMessage, setScanMessage] = useState('');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
 
@@ -48,10 +50,51 @@ export default function ManifestPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Manifest</h1>
-        <p className="text-gray-500 text-sm">Complete inventory of NAS content ({items.length} entries)</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Manifest</h1>
+          <p className="text-gray-500 text-sm">Complete inventory of NAS content ({items.length} entries)</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              setScanning(true);
+              setScanMessage('');
+              try {
+                const res = await fetch('/api/manifest/scan', { method: 'POST' });
+                const data = await res.json();
+                setScanMessage(data.success ? `Scanned ${data.scanned} items` : data.error);
+                // Refresh
+                const r = await fetch('/api/manifest');
+                setItems(await r.json());
+              } catch { setScanMessage('Scan failed'); }
+              finally { setScanning(false); }
+            }}
+            disabled={scanning}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium text-sm"
+          >
+            {scanning ? 'Scanning...' : 'Scan NAS'}
+          </button>
+          <a
+            href="/api/manifest/export?format=csv"
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-sm inline-block"
+          >
+            Export CSV
+          </a>
+          <a
+            href="/api/manifest/export?format=json"
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium text-sm inline-block"
+          >
+            Export JSON
+          </a>
+        </div>
       </div>
+
+      {scanMessage && (
+        <div className="mb-4 p-3 rounded-lg text-sm bg-green-950 border border-green-800 text-green-300">
+          {scanMessage}
+        </div>
+      )}
 
       <div className="flex gap-4 mb-6">
         <input

@@ -132,6 +132,49 @@ export default function SettingsPage() {
             <SettingField label="Radarr API Key" name="radarr_api_key" value={settings.radarr_api_key || ''} onChange={updateField} />
           </div>
         </section>
+
+        {/* Notifications Section */}
+        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4">Notifications</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SettingField label="Webhook URL (Discord/Slack)" name="notification_webhook_url" value={settings.notification_webhook_url || ''} onChange={updateField} placeholder="https://discord.com/api/webhooks/..." />
+            <SettingField label="Email (optional)" name="notification_email" value={settings.notification_email || ''} onChange={updateField} placeholder="you@example.com" />
+          </div>
+          <div className="flex gap-6 mt-4">
+            <label className="flex items-center gap-2 text-sm text-gray-400">
+              <input
+                type="checkbox"
+                checked={settings.notification_on_complete === 'true'}
+                onChange={e => updateField('notification_on_complete', e.target.checked ? 'true' : 'false')}
+                className="rounded"
+              />
+              Notify on upload complete
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-400">
+              <input
+                type="checkbox"
+                checked={settings.notification_on_error === 'true'}
+                onChange={e => updateField('notification_on_error', e.target.checked ? 'true' : 'false')}
+                className="rounded"
+              />
+              Notify on errors
+            </label>
+          </div>
+        </section>
+
+        {/* AI Assistant Section */}
+        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4">AI Assistant</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Add your own Claude API key to enable the AI assistant. Get one at{' '}
+            <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+              console.anthropic.com
+            </a>
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SettingField label="Claude API Key" name="claude_api_key" value={settings.claude_api_key || ''} type="password" onChange={updateField} placeholder="sk-ant-..." />
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -23,6 +23,17 @@ interface SchedulerStatus {
   bandwidthLimit: number;
 }
 
+interface CostData {
+  totalStoredBytes: number;
+  pendingBytes: number;
+  monthlyCostUsd: number;
+  yearlyCostUsd: number;
+  estimatedPutCostUsd: number;
+  avgBytesPerDay: number;
+  etaDays: number | null;
+  etaDate: string | null;
+}
+
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
   const k = 1024;
@@ -44,15 +55,21 @@ function StatCard({ label, value, subtext, color }: { label: string; value: stri
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [scheduler, setScheduler] = useState<SchedulerStatus | null>(null);
+  const [costs, setCosts] = useState<CostData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const res = await fetch('/api/backup/status');
-        const data = await res.json();
-        setStats(data.stats);
-        setScheduler(data.scheduler);
+        const [statusRes, costsRes] = await Promise.all([
+          fetch('/api/backup/status'),
+          fetch('/api/backup/costs'),
+        ]);
+        const statusData = await statusRes.json();
+        const costsData = await costsRes.json();
+        setStats(statusData.stats);
+        setScheduler(statusData.scheduler);
+        setCosts(costsData);
       } catch (err) {
         console.error('Failed to fetch status:', err);
       } finally {
@@ -60,7 +77,7 @@ export default function Dashboard() {
       }
     }
     fetchStatus();
-    const interval = setInterval(fetchStatus, 5000);
+    const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -165,6 +182,63 @@ export default function Dashboard() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Cost & ETA */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <h2 className="text-lg font-semibold mb-4">Glacier Costs</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Monthly storage</span>
+              <span className="font-medium">${costs?.monthlyCostUsd?.toFixed(2) || '0.00'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Yearly storage</span>
+              <span className="font-medium">${costs?.yearlyCostUsd?.toFixed(2) || '0.00'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Upload requests (one-time)</span>
+              <span className="font-medium">${costs?.estimatedPutCostUsd?.toFixed(2) || '0.00'}</span>
+            </div>
+            <div className="pt-3 border-t border-gray-800 flex justify-between">
+              <span className="text-gray-400">Data stored</span>
+              <span className="font-medium">{formatBytes(costs?.totalStoredBytes || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Data pending</span>
+              <span className="font-medium">{formatBytes(costs?.pendingBytes || 0)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <h2 className="text-lg font-semibold mb-4">Estimated Completion</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Avg upload speed</span>
+              <span className="font-medium">
+                {costs?.avgBytesPerDay ? formatBytes(costs.avgBytesPerDay) + '/day' : 'No data yet'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Remaining</span>
+              <span className="font-medium">{formatBytes(costs?.pendingBytes || 0)}</span>
+            </div>
+            <div className="pt-3 border-t border-gray-800 flex justify-between">
+              <span className="text-gray-400">ETA</span>
+              <span className="font-medium text-lg">
+                {costs?.etaDays ? costs.etaDays + ' days' : 'N/A'}
+              </span>
+            </div>
+            {costs?.etaDate && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">Estimated date</span>
+                <span className="font-medium">{new Date(costs.etaDate).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

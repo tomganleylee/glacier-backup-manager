@@ -44,11 +44,6 @@ export async function POST() {
         synced_at = datetime('now')
     `);
 
-    // Add unique constraint if not exists (for sonarr_id)
-    try {
-      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_shows_sonarr_id ON shows(sonarr_id) WHERE sonarr_id IS NOT NULL');
-    } catch { /* already exists */ }
-
     let synced = 0;
     const transaction = db.transaction(() => {
       for (const s of series) {

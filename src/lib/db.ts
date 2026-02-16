@@ -40,7 +40,7 @@ function runMigrations(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS shows (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
-      sonarr_id INTEGER,
+      sonarr_id INTEGER UNIQUE,
       path TEXT,
       size_bytes INTEGER DEFAULT 0,
       episode_count INTEGER DEFAULT 0,
@@ -68,11 +68,24 @@ function runMigrations(db: Database.Database) {
       error TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS transcode_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      codec TEXT NOT NULL DEFAULT 'hevc',
+      preset TEXT NOT NULL DEFAULT 'p5',
+      cq INTEGER NOT NULL DEFAULT 22,
+      extra_args TEXT DEFAULT '',
+      is_default INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS transcode_jobs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       source_path TEXT NOT NULL,
       output_path TEXT,
       show_id INTEGER REFERENCES shows(id),
+      profile_id INTEGER REFERENCES transcode_profiles(id),
       status TEXT DEFAULT 'queued',
       codec_from TEXT,
       codec_to TEXT DEFAULT 'hevc',
@@ -112,7 +125,18 @@ function runMigrations(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_transcode_jobs_status ON transcode_jobs(status);
     CREATE INDEX IF NOT EXISTS idx_manifest_type ON manifest(type);
     CREATE INDEX IF NOT EXISTS idx_manifest_backed_up ON manifest(backed_up);
+    CREATE INDEX IF NOT EXISTS idx_transcode_profiles_default ON transcode_profiles(is_default);
   `);
+
+  // Seed default transcode profiles
+  const insertProfile = db.prepare(
+    'INSERT OR IGNORE INTO transcode_profiles (name, description, codec, preset, cq, extra_args, is_default) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  );
+  insertProfile.run('Balanced (Default)', 'Good quality/size balance for archival', 'hevc', 'p5', 22, '', 1);
+  insertProfile.run('High Quality', 'Near-transparent quality, larger files', 'hevc', 'p7', 18, '', 0);
+  insertProfile.run('Small Size', 'Aggressive compression, smaller files', 'hevc', 'p5', 28, '', 0);
+  insertProfile.run('Fast Preview', 'Quick encode for testing', 'hevc', 'p1', 24, '', 0);
+  insertProfile.run('AV1 Quality', 'AV1 codec for best compression (slower)', 'av1', 'p5', 30, '-c:v av1_nvenc', 0);
 
   // Seed default settings
   const insertSetting = db.prepare(
@@ -132,6 +156,11 @@ function runMigrations(db: Database.Database) {
     radarr_url: 'http://192.168.3.119:7878',
     radarr_api_key: 'a794dc89fe4a4036b41fe6a403d03773',
     scheduler_enabled: 'false',
+    notification_webhook_url: '',
+    notification_email: '',
+    notification_on_complete: 'false',
+    notification_on_error: 'true',
+    claude_api_key: '',
   };
   for (const [key, value] of Object.entries(defaults)) {
     insertSetting.run(key, value);

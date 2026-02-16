@@ -18,6 +18,17 @@ interface TranscodeJob {
   error: string | null;
 }
 
+interface TranscodeProfile {
+  id: number;
+  name: string;
+  description: string;
+  codec: string;
+  preset: string;
+  cq: number;
+  extra_args: string;
+  is_default: number;
+}
+
 function formatBytes(bytes: number): string {
   if (!bytes || bytes === 0) return '-';
   const k = 1024;
@@ -43,19 +54,31 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function TranscodePage() {
   const [jobs, setJobs] = useState<TranscodeJob[]>([]);
+  const [profiles, setProfiles] = useState<TranscodeProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchJobs() {
+    async function fetchData() {
+      try {
+        const [jobsRes, profilesRes] = await Promise.all([
+          fetch('/api/transcode'),
+          fetch('/api/transcode/profiles'),
+        ]);
+        const jobsData = await jobsRes.json();
+        const profilesData = await profilesRes.json();
+        setJobs(Array.isArray(jobsData) ? jobsData : []);
+        setProfiles(Array.isArray(profilesData) ? profilesData : []);
+      } catch { setJobs([]); }
+      finally { setLoading(false); }
+    }
+    fetchData();
+    const interval = setInterval(async () => {
       try {
         const res = await fetch('/api/transcode');
         const data = await res.json();
         setJobs(Array.isArray(data) ? data : []);
-      } catch { setJobs([]); }
-      finally { setLoading(false); }
-    }
-    fetchJobs();
-    const interval = setInterval(fetchJobs, 5000);
+      } catch { /* ignore */ }
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -126,6 +149,33 @@ export default function TranscodePage() {
         </div>
       )}
 
+      {/* Profiles */}
+      <div className="mt-6 bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 className="text-lg font-semibold mb-4">Transcode Profiles</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {profiles.map(profile => (
+            <div
+              key={profile.id}
+              className={'p-4 rounded-lg border ' + (profile.is_default ? 'border-blue-700 bg-blue-950/30' : 'border-gray-700 bg-gray-800/50')}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-medium text-sm">{profile.name}</h3>
+                {profile.is_default ? (
+                  <span className="px-2 py-0.5 bg-blue-900 text-blue-300 rounded text-xs">Default</span>
+                ) : null}
+              </div>
+              <p className="text-xs text-gray-500 mb-2">{profile.description}</p>
+              <div className="flex gap-3 text-xs text-gray-400">
+                <span>Codec: {profile.codec}</span>
+                <span>Preset: {profile.preset}</span>
+                <span>CQ: {profile.cq}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Worker */}
       <div className="mt-6 bg-gray-900 border border-gray-800 rounded-xl p-5">
         <h2 className="text-lg font-semibold mb-2">Gaming PC Worker</h2>
         <p className="text-sm text-gray-400">
