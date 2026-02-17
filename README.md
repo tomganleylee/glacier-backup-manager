@@ -14,7 +14,8 @@ Built for people who want complete control over what gets backed up, when it upl
 
 - **Dashboard** — Real-time upload progress, queue status, Glacier cost tracker, and estimated completion date
 - **File Browser** — Browse NAS filesystem, select files/folders for backup with priority levels (P0 Critical → P3 Low)
-- **Shows Manager** — Sonarr/Radarr integration with automatic rarity scoring (rare/moderate/easy to find)
+- **Shows Manager** — Sonarr integration with automatic rarity scoring (rare/moderate/easy to find)
+- **Movies Manager** — Radarr integration with rarity scoring, codec detection, and transcode queueing
 - **Transcode Queue** — Queue x264→x265/AV1 transcoding jobs with multiple profiles, processed by a gaming PC worker via NVENC
 - **Manifest** — Full searchable inventory of all NAS content with backup status, CSV/JSON export
 - **Night Scheduler** — Uploads only during configurable hours (default 11pm–7am) with bandwidth limiting
@@ -253,7 +254,13 @@ All API routes are under `/api/`:
 | `/api/backup/status` | GET | Upload stats + scheduler status |
 | `/api/backup/costs` | GET | Glacier cost calculations + ETA |
 | `/api/shows` | GET/PATCH | List/update shows |
-| `/api/shows/sync` | POST | Sync from Sonarr/Radarr |
+| `/api/shows/sync` | POST | Sync from Sonarr |
+| `/api/shows/scan-codecs` | POST | Detect video codecs for shows |
+| `/api/shows/:id/transcode` | POST | Queue show episodes for transcode |
+| `/api/movies` | GET/PATCH | List/update movies |
+| `/api/movies/sync` | POST | Sync from Radarr |
+| `/api/movies/scan-codecs` | POST | Detect video codecs for movies |
+| `/api/movies/:id/transcode` | POST | Queue movie for transcode |
 | `/api/scheduler` | GET/POST | Scheduler status + start/stop |
 | `/api/manifest` | GET | Searchable NAS inventory |
 | `/api/manifest/scan` | POST | Scan NAS and populate manifest |
@@ -269,7 +276,8 @@ SQLite database stored at `data/backup.db` with these tables:
 
 - `settings` — Key-value configuration store
 - `backup_items` — Files/folders selected for backup with priority and status
-- `shows` — Media library synced from Sonarr/Radarr with rarity scores
+- `shows` — TV shows synced from Sonarr with rarity scores
+- `movies` — Movies synced from Radarr with rarity scores
 - `upload_log` — Detailed log of every upload attempt
 - `transcode_jobs` — Transcode queue with progress tracking
 - `transcode_profiles` — Encoding presets (HEVC, AV1, etc.)

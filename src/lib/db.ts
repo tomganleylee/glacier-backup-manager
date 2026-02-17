@@ -117,8 +117,6 @@ function runMigrations(db: Database.Database) {
       metadata TEXT
     );
 
-    CREATE INDEX IF NOT EXISTS idx_backup_items_status ON backup_items(status);
-    CREATE INDEX IF NOT EXISTS idx_backup_items_priority ON backup_items(priority);
     CREATE TABLE IF NOT EXISTS movies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,

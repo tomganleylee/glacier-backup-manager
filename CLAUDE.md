@@ -19,17 +19,20 @@ A Next.js 14 web app that manages backing up a 33 TB Unraid NAS to AWS S3 Glacie
 ```bash
 ssh root@192.168.3.202 'curl -s http://localhost:3000/api/status' 2>/dev/null
 ```
-Returns: backup queue stats, transcode stats, shows summary, scheduler state, recent activity, and non-sensitive settings.
+Returns: backup queue stats, transcode stats, shows summary, movies summary, scheduler state, recent activity, and non-sensitive settings.
 
 ### Key API endpoints
 - `GET /api/status` — Full system summary (use this first)
 - `GET /api/files?path=<relative>` — Browse NAS files with backup status
 - `GET /api/shows` — List all shows with rarity, codec, size
+- `GET /api/movies` — List all movies with rarity, codec, size
 - `GET /api/backup` — List backup queue items
 - `GET /api/transcode` — List transcode jobs
 - `GET /api/settings` — All settings (sensitive keys masked)
-- `POST /api/shows/sync` — Sync shows from Sonarr/Radarr
+- `POST /api/shows/sync` — Sync shows from Sonarr
+- `POST /api/movies/sync` — Sync movies from Radarr
 - `POST /api/shows/<id>/transcode` — Queue a show for transcoding
+- `POST /api/movies/<id>/transcode` — Queue a movie for transcoding
 - `POST /api/backup` — Add items to backup queue (JSON array of {path, type, size_bytes, priority})
 - `POST /api/scheduler` — Start/stop scheduler (`{action: "start"}` or `{action: "stop"}`)
 - `POST /api/manifest/scan` — Scan NAS to populate manifest
@@ -38,7 +41,7 @@ Returns: backup queue stats, transcode stats, shows summary, scheduler state, re
 ```bash
 ssh root@192.168.3.202 'sqlite3 /opt/glacier-backup-manager/data/backup.db "YOUR SQL HERE"'
 ```
-Tables: `settings`, `backup_items`, `shows`, `upload_log`, `transcode_jobs`, `upload_stats`, `manifest`, `transcode_profiles`
+Tables: `settings`, `backup_items`, `shows`, `movies`, `upload_log`, `transcode_jobs`, `upload_stats`, `manifest`, `transcode_profiles`
 
 ### App management
 ```bash
@@ -67,7 +70,8 @@ ssh root@192.168.3.202 'systemctl restart glacier-backup'
 - The gaming PC worker (`scripts/gaming-pc-worker.ps1`) accesses files via SMB, creates `.hevc.mkv` files alongside originals
 - Never delete original files — the user wants to compare quality before deciding
 - AWS bucket: `toms-backup-aws`, region: `eu-north-1`
-- Upload window: 23:00-07:00, bandwidth limit: 3 Mbps (configurable)
+- Upload window: 23:00-07:00, bandwidth limit: 100 Mbps (configurable)
+- Proxmox host: 192.168.3.137 (SSH key installed for passwordless access from both Windows PC and backup LXC)
 
 ## Build & Run
 ```bash

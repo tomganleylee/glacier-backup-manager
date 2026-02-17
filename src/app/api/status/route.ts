@@ -37,6 +37,14 @@ export async function GET() {
       totalSizeBytes: (db.prepare('SELECT COALESCE(SUM(size_bytes),0) as s FROM shows').get() as { s: number }).s,
     };
 
+    // Movies summary
+    const movieStats = {
+      total: (db.prepare('SELECT COUNT(*) as c FROM movies').get() as { c: number }).c,
+      backupEnabled: (db.prepare('SELECT COUNT(*) as c FROM movies WHERE backup_enabled = 1').get() as { c: number }).c,
+      rare: (db.prepare("SELECT COUNT(*) as c FROM movies WHERE rarity = 'rare'").get() as { c: number }).c,
+      totalSizeBytes: (db.prepare('SELECT COALESCE(SUM(size_bytes),0) as s FROM movies').get() as { s: number }).s,
+    };
+
     // Recent activity (last 5 completed uploads and transcodes)
     const recentUploads = db.prepare(
       "SELECT file_path, file_size_bytes, completed_at FROM upload_log WHERE status = 'completed' ORDER BY completed_at DESC LIMIT 5"
@@ -55,6 +63,7 @@ export async function GET() {
       backup: backupStats,
       transcode: transcodeStats,
       shows: showStats,
+      movies: movieStats,
       scheduler,
       recentUploads,
       recentTranscodes,
