@@ -119,8 +119,30 @@ function runMigrations(db: Database.Database) {
 
     CREATE INDEX IF NOT EXISTS idx_backup_items_status ON backup_items(status);
     CREATE INDEX IF NOT EXISTS idx_backup_items_priority ON backup_items(priority);
+    CREATE TABLE IF NOT EXISTS movies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      radarr_id INTEGER UNIQUE,
+      path TEXT,
+      size_bytes INTEGER DEFAULT 0,
+      year INTEGER,
+      status TEXT,
+      rarity TEXT DEFAULT 'unknown',
+      rarity_score INTEGER DEFAULT 50,
+      backup_enabled INTEGER DEFAULT 0,
+      keep_best_quality INTEGER DEFAULT 0,
+      codec TEXT,
+      resolution TEXT,
+      synced_at TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_backup_items_status ON backup_items(status);
+    CREATE INDEX IF NOT EXISTS idx_backup_items_priority ON backup_items(priority);
     CREATE INDEX IF NOT EXISTS idx_shows_rarity ON shows(rarity);
     CREATE INDEX IF NOT EXISTS idx_shows_backup ON shows(backup_enabled);
+    CREATE INDEX IF NOT EXISTS idx_movies_rarity ON movies(rarity);
+    CREATE INDEX IF NOT EXISTS idx_movies_backup ON movies(backup_enabled);
     CREATE INDEX IF NOT EXISTS idx_upload_log_status ON upload_log(status);
     CREATE INDEX IF NOT EXISTS idx_transcode_jobs_status ON transcode_jobs(status);
     CREATE TABLE IF NOT EXISTS chat_usage (

@@ -34,7 +34,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <NavLink href="/" label="Dashboard" icon="&#x1F4CA;" />
               <NavLink href="/files" label="File Browser" icon="&#x1F4C1;" />
               <NavLink href="/shows" label="Shows" icon="&#x1F4FA;" />
-              <NavLink href="/transcode" label="Transcode" icon="&#x1F3AC;" />
+              <NavLink href="/movies" label="Movies" icon="&#x1F3AC;" />
+              <NavLink href="/transcode" label="Transcode" icon="&#x1F504;" />
               <NavLink href="/manifest" label="Manifest" icon="&#x1F4CB;" />
               <NavLink href="/assistant" label="AI Assistant" icon="&#x1F916;" />
               <NavLink href="/settings" label="Settings" icon="&#x2699;" />
