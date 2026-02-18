@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -29,6 +31,7 @@
   --info: #3b82f6;
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
   --radius: 12px;
   --radius-sm: 8px;
   --radius-xs: 6px;
@@ -39,9 +42,23 @@
   --glow-spread: 0px;
   --nav-active-bg: rgba(59, 130, 246, 0.1);
   --nav-active-border: #3b82f6;
+
+  /* Neon glow tokens (inactive in clean theme) */
+  --neon-glow: none;
+  --neon-glow-sm: none;
+  --neon-glow-lg: none;
+  --neon-glow-secondary: none;
+  --neon-glow-tertiary: none;
+
+  /* Chamfer (disabled in clean theme) */
+  --chamfer: none;
+  --chamfer-sm: none;
 }
 
-/* Cyberpunk Theme */
+/* ============================================
+   CYBERPUNK THEME
+   "High-Tech, Low-Life"
+   ============================================ */
 [data-theme="cyberpunk"] {
   --bg: #0a0a0f;
   --bg-card: #12121a;
@@ -64,16 +81,28 @@
   --info: #00d4ff;
   --font-body: 'JetBrains Mono', 'Fira Code', 'Share Tech Mono', monospace;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --font-heading: 'Orbitron', 'Share Tech Mono', monospace;
   --radius: 2px;
   --radius-sm: 2px;
   --radius-xs: 1px;
   --shadow-card: 0 0 1px rgba(0, 255, 136, 0.1);
-  --shadow-card-hover: 0 0 8px rgba(0, 255, 136, 0.15), 0 0 20px rgba(0, 255, 136, 0.05);
+  --shadow-card-hover: 0 0 8px rgba(0, 255, 136, 0.2), 0 0 20px rgba(0, 255, 136, 0.08);
   --gradient-accent: linear-gradient(135deg, #00ff88, #00d4ff);
-  --scanline-opacity: 0.03;
+  --scanline-opacity: 1;
   --glow-spread: 10px;
   --nav-active-bg: rgba(0, 255, 136, 0.08);
   --nav-active-border: #00ff88;
+
+  /* Neon glow tokens */
+  --neon-glow: 0 0 5px #00ff88, 0 0 10px rgba(0, 255, 136, 0.25);
+  --neon-glow-sm: 0 0 3px #00ff88, 0 0 6px rgba(0, 255, 136, 0.2);
+  --neon-glow-lg: 0 0 10px #00ff88, 0 0 20px rgba(0, 255, 136, 0.4), 0 0 40px rgba(0, 255, 136, 0.2);
+  --neon-glow-secondary: 0 0 5px #ff00ff, 0 0 20px rgba(255, 0, 255, 0.4);
+  --neon-glow-tertiary: 0 0 5px #00d4ff, 0 0 20px rgba(0, 212, 255, 0.4);
+
+  /* Chamfer clip-paths */
+  --chamfer: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
+  --chamfer-sm: polygon(0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px));
 }
 
 /* ============================================
@@ -86,7 +115,10 @@ body {
   color: var(--text);
 }
 
-/* Scanline overlay (cyberpunk only) */
+/* ============================================
+   CYBERPUNK: SCANLINE OVERLAY
+   CRT monitor horizontal lines
+   ============================================ */
 [data-theme="cyberpunk"] main::after {
   content: '';
   position: fixed;
@@ -100,15 +132,26 @@ body {
     rgba(0, 0, 0, 0.15) 2px,
     rgba(0, 0, 0, 0.15) 4px
   );
-  opacity: var(--scanline-opacity);
+  opacity: 0.04;
 }
 
-/* Grid pattern background (cyberpunk only) */
+/* ============================================
+   CYBERPUNK: CIRCUIT GRID PATTERN
+   ============================================ */
 [data-theme="cyberpunk"] main {
   background-image:
-    linear-gradient(rgba(0, 255, 136, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 136, 0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
+    linear-gradient(rgba(0, 255, 136, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.025) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* ============================================
+   CYBERPUNK: SIDEBAR ENHANCEMENTS
+   ============================================ */
+[data-theme="cyberpunk"] aside {
+  border-right-color: var(--accent) !important;
+  border-right-width: 1px;
+  box-shadow: 1px 0 20px rgba(0, 255, 136, 0.05);
 }
 
 /* ============================================
@@ -119,11 +162,17 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-/* ============================================
-   UTILITY CLASSES
-   ============================================ */
+[data-theme="cyberpunk"] ::-webkit-scrollbar-thumb {
+  background: var(--accent-dim);
+}
+[data-theme="cyberpunk"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
 
-/* Cards */
+/* ============================================
+   CARDS
+   ============================================ */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -136,13 +185,19 @@ body {
   border-color: var(--border-hover);
 }
 
-.card-interactive:hover {
-  border-color: var(--accent);
+/* Cyberpunk: chamfered corners + neon hover */
+[data-theme="cyberpunk"] .card {
+  clip-path: var(--chamfer);
+  border-color: var(--border);
+}
+[data-theme="cyberpunk"] .card:hover {
+  border-color: rgba(0, 255, 136, 0.3);
   box-shadow: var(--shadow-card-hover);
-  transform: translateY(-1px);
 }
 
-/* Stat cards */
+/* ============================================
+   STAT CARDS
+   ============================================ */
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -169,7 +224,23 @@ body {
   opacity: 1;
 }
 
-/* Input fields */
+/* Cyberpunk: chamfered + glow */
+[data-theme="cyberpunk"] .stat-card {
+  clip-path: var(--chamfer);
+}
+[data-theme="cyberpunk"] .stat-card:hover {
+  border-color: rgba(0, 255, 136, 0.3);
+  box-shadow: var(--neon-glow-sm);
+}
+[data-theme="cyberpunk"] .stat-card::before {
+  height: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* ============================================
+   INPUT FIELDS
+   ============================================ */
 .input-field {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -188,7 +259,20 @@ body {
   color: var(--text-dim);
 }
 
-/* Buttons */
+/* Cyberpunk: terminal-style inputs */
+[data-theme="cyberpunk"] .input-field {
+  clip-path: var(--chamfer-sm);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+[data-theme="cyberpunk"] .input-field:focus {
+  border-color: var(--accent);
+  box-shadow: var(--neon-glow-sm);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
 .btn-primary {
   background: var(--accent);
   color: var(--bg);
@@ -202,7 +286,20 @@ body {
   box-shadow: 0 0 var(--glow-spread) var(--accent-glow);
 }
 
-/* Tables */
+/* Cyberpunk: uppercase monospace buttons with glow */
+[data-theme="cyberpunk"] .btn-primary {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-mono);
+  clip-path: var(--chamfer-sm);
+}
+[data-theme="cyberpunk"] .btn-primary:hover {
+  box-shadow: var(--neon-glow);
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
 .table-row {
   transition: background-color 0.1s ease;
 }
@@ -211,7 +308,14 @@ body {
   background: var(--bg-card-hover);
 }
 
-/* Badge base */
+/* Cyberpunk: accent tinted rows */
+[data-theme="cyberpunk"] .table-row:hover {
+  background: rgba(0, 255, 136, 0.03);
+}
+
+/* ============================================
+   BADGES
+   ============================================ */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -223,47 +327,171 @@ body {
   line-height: 1.5;
 }
 
-/* Neon text (cyberpunk) */
+/* Cyberpunk: uppercase mono badges */
+[data-theme="cyberpunk"] .badge {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+
+/* ============================================
+   CYBERPUNK: NEON TEXT EFFECTS
+   ============================================ */
 [data-theme="cyberpunk"] .neon-text {
-  text-shadow: 0 0 7px var(--accent), 0 0 20px var(--accent-glow);
+  text-shadow:
+    0 0 7px var(--accent),
+    0 0 20px rgba(0, 255, 136, 0.3),
+    0 0 40px rgba(0, 255, 136, 0.1);
 }
 
-[data-theme="cyberpunk"] .neon-border {
-  box-shadow: 0 0 5px var(--accent-glow), inset 0 0 5px var(--accent-glow);
+/* Headings get Orbitron + uppercase in cyberpunk */
+[data-theme="cyberpunk"] h1 {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* Glitch animation (cyberpunk) */
+/* ============================================
+   CYBERPUNK: GLITCH ANIMATION
+   Chromatic aberration + position glitch
+   ============================================ */
 @keyframes glitch {
-  0%, 94% { transform: translate(0); }
-  95% { transform: translate(-2px, 1px); }
-  96% { transform: translate(2px, -1px); }
-  97% { transform: translate(-1px, -1px); }
-  98% { transform: translate(1px, 1px); }
+  0%, 92% { transform: translate(0); }
+  93% { transform: translate(-2px, 1px); }
+  94% { transform: translate(2px, -1px); }
+  95% { transform: translate(-1px, -1px); text-shadow: -2px 0 #ff00ff, 2px 0 #00d4ff; }
+  96% { transform: translate(1px, 1px); text-shadow: 2px 0 #ff00ff, -2px 0 #00d4ff; }
+  97% { transform: translate(-2px, 2px); text-shadow: -1px 0 #ff00ff, 1px 0 #00d4ff; }
+  98% { transform: translate(0); text-shadow: none; }
   100% { transform: translate(0); }
 }
 
+@keyframes glitch-clip {
+  0%, 92% { opacity: 0; }
+  93% { opacity: 0.4; clip-path: inset(20% 0 60% 0); }
+  94% { opacity: 0; }
+  95% { opacity: 0.3; clip-path: inset(50% 0 20% 0); }
+  96% { opacity: 0.4; clip-path: inset(10% 0 70% 0); }
+  97% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* The main brand text gets the glitch effect */
 [data-theme="cyberpunk"] .glitch-text {
-  animation: glitch 4s infinite;
+  position: relative;
+  animation: glitch 6s infinite;
+}
+
+[data-theme="cyberpunk"] .glitch-text::before {
+  content: attr(data-text);
+  position: absolute;
+  left: -1px;
+  top: 0;
+  color: #ff00ff;
+  opacity: 0;
+  clip-path: inset(0 0 50% 0);
+  animation: glitch-clip 6s infinite;
+  pointer-events: none;
 }
 
 [data-theme="cyberpunk"] .glitch-text::after {
   content: attr(data-text);
   position: absolute;
-  left: 2px;
+  left: 1px;
   top: 0;
-  color: #ff00ff;
+  color: #00d4ff;
   opacity: 0;
-  clip-path: inset(0 0 50% 0);
-  animation: glitch-clip 4s infinite;
+  clip-path: inset(50% 0 0 0);
+  animation: glitch-clip 6s infinite reverse;
+  pointer-events: none;
 }
 
-@keyframes glitch-clip {
-  0%, 94% { opacity: 0; }
-  95%, 98% { opacity: 0.3; }
-  100% { opacity: 0; }
+/* ============================================
+   CYBERPUNK: CHROMATIC ABERRATION ON HOVER
+   For headings and key interactive elements
+   ============================================ */
+@keyframes rgbShift {
+  0%, 100% { text-shadow: -1px 0 #ff00ff, 1px 0 #00d4ff; }
+  50% { text-shadow: 1px 0 #ff00ff, -1px 0 #00d4ff; }
 }
 
-/* Pulse ring */
+/* ============================================
+   CYBERPUNK: BLINKING CURSOR
+   Terminal aesthetic
+   ============================================ */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+[data-theme="cyberpunk"] .blink-cursor::after {
+  content: '_';
+  color: var(--accent);
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+}
+
+/* ============================================
+   CYBERPUNK: NEON BORDER GLOW
+   Real glow via stacked box-shadows
+   ============================================ */
+[data-theme="cyberpunk"] .neon-border {
+  border-color: rgba(0, 255, 136, 0.4);
+  box-shadow:
+    0 0 5px rgba(0, 255, 136, 0.1),
+    inset 0 0 5px rgba(0, 255, 136, 0.05);
+}
+
+[data-theme="cyberpunk"] .neon-border-hover:hover {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 5px rgba(0, 255, 136, 0.2),
+    0 0 15px rgba(0, 255, 136, 0.1),
+    inset 0 0 5px rgba(0, 255, 136, 0.05);
+}
+
+/* ============================================
+   CYBERPUNK: CORNER ACCENT DECORATIONS
+   HUD-style bracket corners
+   ============================================ */
+[data-theme="cyberpunk"] .hud-corners {
+  position: relative;
+}
+[data-theme="cyberpunk"] .hud-corners::before,
+[data-theme="cyberpunk"] .hud-corners::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: var(--accent);
+  opacity: 0.4;
+  pointer-events: none;
+}
+[data-theme="cyberpunk"] .hud-corners::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+[data-theme="cyberpunk"] .hud-corners::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+}
+
+/* ============================================
+   CYBERPUNK: DATA PREFIX
+   Terminal ">" prompt on labels
+   ============================================ */
+[data-theme="cyberpunk"] th {
+  font-family: 'Share Tech Mono', var(--font-mono);
+  letter-spacing: 0.15em;
+}
+
+/* ============================================
+   PULSE / RING ANIMATION
+   ============================================ */
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 var(--accent-glow); }
   70% { box-shadow: 0 0 0 6px transparent; }
@@ -274,7 +502,9 @@ body {
   animation: pulse-ring 2s infinite;
 }
 
-/* Progress bar shimmer */
+/* ============================================
+   PROGRESS BAR SHIMMER
+   ============================================ */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -286,7 +516,15 @@ body {
   animation: shimmer 2s infinite;
 }
 
-/* Loading skeleton */
+/* Cyberpunk: neon shimmer */
+[data-theme="cyberpunk"] .progress-shimmer {
+  background: linear-gradient(90deg, transparent 30%, rgba(0, 255, 136, 0.15) 50%, transparent 70%);
+  background-size: 200% 100%;
+}
+
+/* ============================================
+   LOADING SKELETON
+   ============================================ */
 @keyframes skeleton-pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.7; }
@@ -298,15 +536,83 @@ body {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-/* Cyberpunk chamfered corners */
-[data-theme="cyberpunk"] .cyber-card {
-  clip-path: polygon(
-    0 8px, 8px 0,
-    calc(100% - 8px) 0, 100% 8px,
-    100% calc(100% - 8px), calc(100% - 8px) 100%,
-    8px 100%, 0 calc(100% - 8px)
-  );
+/* Cyberpunk: flickering skeleton */
+[data-theme="cyberpunk"] .skeleton {
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, rgba(0, 255, 136, 0.05) 50%, var(--bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* Google Fonts import for cyberpunk */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+/* ============================================
+   CYBERPUNK: SIDEBAR BRAND AREA
+   Special treatment for the logo area
+   ============================================ */
+[data-theme="cyberpunk"] aside > div:first-child {
+  border-bottom-color: rgba(0, 255, 136, 0.2) !important;
+  background: linear-gradient(180deg, rgba(0, 255, 136, 0.03) 0%, transparent 100%);
+}
+
+/* ============================================
+   CYBERPUNK: NAV LINK GLOW ON ACTIVE
+   ============================================ */
+[data-theme="cyberpunk"] nav a[class*="border-l-2"]:not([class*="border-transparent"]) {
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+/* ============================================
+   CYBERPUNK: ICON GLOW ON HOVER
+   ============================================ */
+[data-theme="cyberpunk"] button:hover svg,
+[data-theme="cyberpunk"] a:hover svg {
+  filter: drop-shadow(0 0 3px currentColor);
+  transition: filter 0.15s ease;
+}
+
+/* ============================================
+   CYBERPUNK: SELECT DROPDOWN
+   ============================================ */
+[data-theme="cyberpunk"] select.input-field {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300ff88' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* ============================================
+   CYBERPUNK: TABLE HEADER ACCENTS
+   ============================================ */
+[data-theme="cyberpunk"] thead tr {
+  border-bottom: 1px solid rgba(0, 255, 136, 0.15) !important;
+}
+
+/* ============================================
+   CYBERPUNK: FOCUS STATES
+   Neon ring instead of subtle glow
+   ============================================ */
+[data-theme="cyberpunk"] *:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--accent), var(--neon-glow-sm);
+}
+
+/* ============================================
+   REDUCED MOTION
+   Respect accessibility preferences
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .glitch-text,
+  .glitch-text::before,
+  .glitch-text::after {
+    animation: none !important;
+  }
+  .skeleton {
+    animation: none !important;
+    opacity: 0.5;
+  }
+  .progress-shimmer {
+    animation: none !important;
+  }
+  .pulse-dot {
+    animation: none !important;
+  }
+}

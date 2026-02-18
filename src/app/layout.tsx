@@ -74,8 +74,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Snowflake size={18} style={{ color: 'var(--accent)' }} />
                 </div>
                 <div>
-                  <h1 className="text-sm font-bold neon-text" style={{ color: 'var(--accent)' }}>Glacier Backup</h1>
-                  <p className="text-[11px]" style={{ color: 'var(--text-dim)' }}>NAS Manager</p>
+                  <h1 className="text-sm font-bold neon-text glitch-text" data-text="Glacier Backup" style={{ color: 'var(--accent)', fontFamily: 'var(--font-heading)' }}>Glacier Backup</h1>
+                  <p className="text-[11px] blink-cursor" style={{ color: 'var(--text-dim)' }}>NAS Manager</p>
                 </div>
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             {/* Footer */}
             <div className="p-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
-              <span className="text-[11px]" style={{ color: 'var(--text-dim)' }}>v0.1.0</span>
+              <span className="text-[11px] font-mono" style={{ color: 'var(--text-dim)', letterSpacing: '0.05em' }}>v0.1.0</span>
               <button
                 onClick={toggleTheme}
                 className="p-1.5 rounded-[var(--radius-xs)] transition-colors hover:bg-[var(--bg-elevated)]"
