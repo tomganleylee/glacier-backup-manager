@@ -1,9 +1,10 @@
-import { getSetting } from './db';
+import { getDb, getSetting } from './db';
 
 // Scheduler state (in-memory, resets on restart)
 let schedulerActive = false;
 let currentUploadAbort: (() => void) | null = null;
 let cronInterval: ReturnType<typeof setInterval> | null = null;
+let recoveryDone = false;
 
 export function isWithinUploadWindow(): boolean {
   const startHour = parseInt(getSetting('upload_start_hour') || '23');
@@ -76,5 +77,38 @@ export function stopSchedulerLoop() {
     clearInterval(cronInterval);
     cronInterval = null;
     console.log('[Scheduler] Periodic check stopped');
+  }
+}
+
+// Recover items stuck as "uploading" after a service restart
+export function recoverStuckUploads() {
+  if (recoveryDone) return;
+  recoveryDone = true;
+  try {
+    const db = getDb();
+    const stuck = db.prepare(
+      "SELECT COUNT(*) as count FROM backup_items WHERE status = 'uploading'"
+    ).get() as { count: number };
+    if (stuck.count > 0) {
+      db.prepare(
+        "UPDATE backup_items SET status = 'pending', updated_at = datetime('now') WHERE status = 'uploading'"
+      ).run();
+      console.log(`[Scheduler] Recovered ${stuck.count} stuck item(s) from 'uploading' -> 'pending'`);
+    }
+  } catch (err) {
+    console.error('[Scheduler] Recovery error:', err);
+  }
+}
+
+// Auto-start scheduler if it was previously enabled (called on first API hit)
+let autoStartDone = false;
+export function autoStartIfEnabled(processQueueFn: () => Promise<unknown>) {
+  if (autoStartDone) return;
+  autoStartDone = true;
+  recoverStuckUploads();
+  const enabled = getSetting('scheduler_enabled') === 'true';
+  if (enabled) {
+    console.log('[Scheduler] Auto-starting (was previously enabled)');
+    startSchedulerLoop(processQueueFn);
   }
 }

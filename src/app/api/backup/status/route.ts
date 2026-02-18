@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getUploadStats } from '@/lib/uploader';
-import { getSchedulerStatus } from '@/lib/scheduler';
+import { getUploadStats, processQueue } from '@/lib/uploader';
+import { getSchedulerStatus, autoStartIfEnabled } from '@/lib/scheduler';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // Auto-start scheduler on first hit after service restart
+    autoStartIfEnabled(processQueue);
     const stats = getUploadStats();
     const scheduler = getSchedulerStatus();
     return NextResponse.json({ stats, scheduler });

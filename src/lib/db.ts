@@ -152,6 +152,22 @@ function runMigrations(db: Database.Database) {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS restore_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      glacier_key TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      size_bytes INTEGER DEFAULT 0,
+      tier TEXT DEFAULT 'Bulk',
+      status TEXT DEFAULT 'pending',
+      requested_at TEXT DEFAULT (datetime('now')),
+      ready_at TEXT,
+      downloaded_at TEXT,
+      expires_at TEXT,
+      download_path TEXT,
+      error TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_restore_jobs_status ON restore_jobs(status);
     CREATE INDEX IF NOT EXISTS idx_manifest_type ON manifest(type);
     CREATE INDEX IF NOT EXISTS idx_manifest_backed_up ON manifest(backed_up);
     CREATE INDEX IF NOT EXISTS idx_transcode_profiles_default ON transcode_profiles(is_default);

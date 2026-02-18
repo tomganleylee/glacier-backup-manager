@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSchedulerStatus, abortCurrentUpload, startSchedulerLoop, stopSchedulerLoop } from '@/lib/scheduler';
+import { getSchedulerStatus, abortCurrentUpload, startSchedulerLoop, stopSchedulerLoop, autoStartIfEnabled } from '@/lib/scheduler';
 import { setSetting } from '@/lib/db';
 import { processQueue } from '@/lib/uploader';
 
@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    // Auto-start scheduler on first hit after service restart
+    autoStartIfEnabled(processQueue);
     const status = getSchedulerStatus();
     return NextResponse.json(status);
   } catch (error: unknown) {

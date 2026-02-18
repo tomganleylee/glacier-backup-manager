@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface UsageInfo {
   model: string;
@@ -183,10 +184,10 @@ export default function AssistantPage() {
             <p className="text-sm">Try asking:</p>
             <div className="mt-3 space-y-2">
               {[
-                'What is my current backup status?',
-                'Which shows should I prioritize for backup?',
-                'How much will it cost to back up everything?',
-                'What are the best candidates for transcoding?',
+                'What\'s in the root of my NAS?',
+                'Which rare shows don\'t have backup enabled?',
+                'How much is Glacier costing me per month?',
+                'Show me any failed backup items',
               ].map((suggestion, i) => (
                 <button
                   key={i}
@@ -213,7 +214,13 @@ export default function AssistantPage() {
                     : 'bg-gray-800 text-gray-200'
                 }`}
               >
-                <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
+                {msg.role === 'assistant' ? (
+                  <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-pre:bg-gray-900 prose-pre:border prose-pre:border-gray-700">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <span className="whitespace-pre-wrap">{msg.content}</span>
+                )}
               </div>
               {/* Per-message cost display */}
               {msg.usage && (

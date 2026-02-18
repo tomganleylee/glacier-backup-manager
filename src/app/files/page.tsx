@@ -40,6 +40,7 @@ export default function FileBrowser() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
+  const [transcoding, setTranscoding] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -73,6 +74,30 @@ export default function FileBrowser() {
       else next.add(path);
       return next;
     });
+  }
+
+  async function queueTranscode() {
+    if (selected.size === 0) return;
+    setTranscoding(true);
+    setMessage('');
+    try {
+      const paths = entries.filter(e => selected.has(e.path)).map(e => e.path);
+      const res = await fetch('/api/transcode/queue-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths, codec_to: 'hevc' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage('Queued ' + data.queued + ' video files for transcode' + (data.skipped ? ' (' + data.skipped + ' skipped)' : '') + (data.errors ? ' | Errors: ' + data.errors.join(', ') : ''));
+      } else {
+        setMessage('Error: ' + (data.error || 'Unknown error'));
+      }
+    } catch {
+      setMessage('Failed to queue transcode');
+    } finally {
+      setTranscoding(false);
+    }
   }
 
   async function addToBackup(priority: number) {
@@ -142,6 +167,8 @@ export default function FileBrowser() {
             <button onClick={() => addToBackup(1)} disabled={adding} className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 rounded text-xs font-medium">High (P1)</button>
             <button onClick={() => addToBackup(2)} disabled={adding} className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 rounded text-xs font-medium">Medium (P2)</button>
             <button onClick={() => addToBackup(3)} disabled={adding} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs font-medium">Low (P3)</button>
+            <span className="text-gray-600 mx-1">|</span>
+            <button onClick={queueTranscode} disabled={transcoding} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-xs font-medium">{transcoding ? 'Queuing...' : 'Transcode'}</button>
           </div>
         )}
       </div>

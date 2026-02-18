@@ -42,3 +42,7 @@ data/*.db-shm
 
 # Temp
 tmp/
+
+# C# build output
+scripts/GlacierTranscoder/bin/
+scripts/GlacierTranscoder/obj/
