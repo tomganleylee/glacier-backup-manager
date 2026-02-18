@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Folder, FileText, ChevronRight, ArrowUp, Search, Download } from 'lucide-react';
 
 interface BackedUpItem {
   id: number;
@@ -47,13 +48,24 @@ function formatDate(dateStr: string): string {
 
 function PriorityBadge({ priority }: { priority: number }) {
   const labels: Record<number, { text: string; color: string }> = {
-    0: { text: 'P0', color: 'bg-red-900 text-red-300 border-red-700' },
-    1: { text: 'P1', color: 'bg-orange-900 text-orange-300 border-orange-700' },
-    2: { text: 'P2', color: 'bg-yellow-900 text-yellow-300 border-yellow-700' },
-    3: { text: 'P3', color: 'bg-gray-800 text-gray-400 border-gray-700' },
+    0: { text: 'P0', color: 'var(--error)' },
+    1: { text: 'P1', color: 'var(--warning)' },
+    2: { text: 'P2', color: 'var(--info)' },
+    3: { text: 'P3', color: 'var(--text-muted)' },
   };
   const { text, color } = labels[priority] || labels[3];
-  return <span className={'px-1.5 py-0.5 rounded text-xs font-medium border ' + color}>{text}</span>;
+  return (
+    <span
+      className="badge"
+      style={{
+        color: color,
+        background: `color-mix(in srgb, ${color} 15%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+      }}
+    >
+      {text}
+    </span>
+  );
 }
 
 function buildFolderTree(items: BackedUpItem[]): FolderNode {
@@ -186,17 +198,18 @@ export default function BackedUpPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Backed Up to Glacier</h1>
-          <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+          <h1 className="text-xl font-bold tracking-tight">Backed Up to Glacier</h1>
+          <div className="flex items-center gap-1 text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
             {breadcrumbs.map((crumb, i) => (
-              <span key={i}>
-                {i > 0 && <span className="mx-1">/</span>}
+              <span key={i} className="flex items-center">
+                {i > 0 && <ChevronRight size={14} style={{ color: 'var(--text-dim)', margin: '0 2px' }} />}
                 <button
                   onClick={() => {
                     if (i === 0) navigateTo('');
                     else navigateTo(currentPath.split('/').filter(Boolean).slice(0, i).join('/'));
                   }}
-                  className="hover:text-blue-400"
+                  className="hover:underline"
+                  style={{ color: i === breadcrumbs.length - 1 ? 'var(--text-secondary)' : 'var(--text-muted)' }}
                 >
                   {crumb}
                 </button>
@@ -204,10 +217,10 @@ export default function BackedUpPage() {
             ))}
           </div>
           {stats && (
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs mt-1" style={{ color: 'var(--text-dim)' }}>
               {stats.total_files} files, {formatBytes(stats.total_bytes)} total in Glacier
               {currentFolder && currentPath && (
-                <span className="text-green-500 ml-2">
+                <span style={{ color: 'var(--success)', marginLeft: '0.5rem' }}>
                   This folder: {currentFolder.totalFiles} files, {formatBytes(currentFolder.totalSize)}
                 </span>
               )}
@@ -217,55 +230,85 @@ export default function BackedUpPage() {
       </div>
 
       {/* Search */}
-      <div className="mb-6">
+      <div className="mb-6 relative">
+        <Search
+          size={16}
+          style={{ color: 'var(--text-dim)', position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
+        />
         <input
           type="text"
           placeholder="Search in this folder..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full md:w-96 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+          className="input-field w-full md:w-96 px-3 py-2 text-sm"
+          style={{ paddingLeft: '36px' }}
         />
       </div>
 
       {message && (
-        <div className="mb-4 p-3 rounded-lg text-sm bg-blue-950 border border-blue-800 text-blue-300">
+        <div
+          className="mb-4 p-3 rounded-lg text-sm"
+          style={{
+            background: 'color-mix(in srgb, var(--info) 10%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--info) 30%, transparent)',
+            color: 'var(--info)',
+          }}
+        >
           {message}
         </div>
       )}
 
       {loading ? (
-        <div className="text-gray-500">Loading backed up items...</div>
+        <div className="space-y-2">
+          <div className="skeleton h-10 w-full" />
+          <div className="skeleton h-10 w-full" />
+          <div className="skeleton h-10 w-full" />
+          <div className="skeleton h-10 w-3/4" />
+        </div>
       ) : !currentFolder ? (
-        <div className="text-gray-500">Folder not found</div>
+        <div style={{ color: 'var(--text-muted)' }}>Folder not found</div>
       ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div className="card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-800 text-gray-400">
-                <th className="p-3 text-left">Name</th>
-                <th className="p-3 text-right">Size</th>
-                <th className="p-3 text-right">Files</th>
-                <th className="p-3 text-center">Priority</th>
-                <th className="p-3 text-right">Uploaded</th>
-                <th className="p-3 text-center">Restore</th>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                <th className="p-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Name</th>
+                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Size</th>
+                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Files</th>
+                <th className="p-3 text-center text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Priority</th>
+                <th className="p-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Uploaded</th>
+                <th className="p-3 text-center text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Restore</th>
               </tr>
             </thead>
             <tbody>
               {currentPath && (
-                <tr className="border-b border-gray-800/50 hover:bg-gray-800/50 cursor-pointer" onClick={goUp}>
-                  <td className="p-3 text-blue-400">{'\uD83D\uDCC1'} ..</td>
+                <tr
+                  className="table-row cursor-pointer"
+                  style={{ borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)' }}
+                  onClick={goUp}
+                >
+                  <td className="p-3 flex items-center gap-2" style={{ color: 'var(--accent)' }}>
+                    <ArrowUp size={16} />
+                    <span>..</span>
+                  </td>
                   <td></td><td></td><td></td><td></td><td></td>
                 </tr>
               )}
               {filteredFolders.map(folder => (
                 <tr
                   key={folder.path}
-                  className="border-b border-gray-800/50 hover:bg-gray-800/50 cursor-pointer"
+                  className="table-row cursor-pointer"
+                  style={{ borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)' }}
                   onClick={() => navigateTo(folder.path)}
                 >
-                  <td className="p-3 text-blue-400 font-medium">{'\uD83D\uDCC1'} {folder.name}</td>
-                  <td className="p-3 text-right text-gray-400">{formatBytes(folder.totalSize)}</td>
-                  <td className="p-3 text-right text-gray-500">{folder.totalFiles}</td>
+                  <td className="p-3 font-medium">
+                    <span className="flex items-center gap-2" style={{ color: 'var(--accent)' }}>
+                      <Folder size={16} />
+                      {folder.name}
+                    </span>
+                  </td>
+                  <td className="p-3 text-right" style={{ color: 'var(--text-secondary)' }}>{formatBytes(folder.totalSize)}</td>
+                  <td className="p-3 text-right" style={{ color: 'var(--text-muted)' }}>{folder.totalFiles}</td>
                   <td className="p-3 text-center"></td>
                   <td className="p-3 text-right"></td>
                   <td className="p-3 text-center"></td>
@@ -274,20 +317,41 @@ export default function BackedUpPage() {
               {visibleFiles.map(item => {
                 const fullGlacierPath = currentPath ? currentPath + '/' + item.path : item.path;
                 return (
-                  <tr key={item.id} className="border-b border-gray-800/50 hover:bg-gray-800/50">
-                    <td className="p-3 text-gray-300">
-                      <span className="text-green-400">{'\u2705'}</span> {item.path}
+                  <tr
+                    key={item.id}
+                    className="table-row"
+                    style={{ borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)' }}
+                  >
+                    <td className="p-3" style={{ color: 'var(--text-secondary)' }}>
+                      <span className="flex items-center gap-2">
+                        <FileText size={16} style={{ color: 'var(--success)' }} />
+                        {item.path}
+                      </span>
                     </td>
-                    <td className="p-3 text-right text-gray-400">{formatBytes(item.size_bytes)}</td>
-                    <td className="p-3 text-right text-gray-500">-</td>
+                    <td className="p-3 text-right" style={{ color: 'var(--text-secondary)' }}>{formatBytes(item.size_bytes)}</td>
+                    <td className="p-3 text-right" style={{ color: 'var(--text-muted)' }}>-</td>
                     <td className="p-3 text-center"><PriorityBadge priority={item.priority} /></td>
-                    <td className="p-3 text-right text-gray-400 whitespace-nowrap">{formatDate(item.uploaded_at)}</td>
+                    <td className="p-3 text-right whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>{formatDate(item.uploaded_at)}</td>
                     <td className="p-3 text-center">
                       <button
                         onClick={() => initiateRestore(item, fullGlacierPath)}
                         disabled={restoringId === item.id}
-                        className="px-2 py-1 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-700 disabled:text-gray-500 rounded text-xs font-medium"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+                        style={{
+                          background: restoringId === item.id
+                            ? 'var(--bg-elevated)'
+                            : 'color-mix(in srgb, var(--warning) 20%, transparent)',
+                          color: restoringId === item.id
+                            ? 'var(--text-dim)'
+                            : 'var(--warning)',
+                          border: `1px solid ${restoringId === item.id
+                            ? 'var(--border)'
+                            : 'color-mix(in srgb, var(--warning) 30%, transparent)'}`,
+                          borderRadius: 'var(--radius-xs)',
+                          cursor: restoringId === item.id ? 'not-allowed' : 'pointer',
+                        }}
                       >
+                        <Download size={12} />
                         {restoringId === item.id ? '...' : 'Restore'}
                       </button>
                     </td>
@@ -295,9 +359,11 @@ export default function BackedUpPage() {
                 );
               })}
               {filteredFolders.length === 0 && visibleFiles.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-gray-500">
-                  {items.length === 0 ? 'No files backed up to Glacier yet.' : 'Empty folder.'}
-                </td></tr>
+                <tr>
+                  <td colSpan={6} className="p-8 text-center" style={{ color: 'var(--text-muted)' }}>
+                    {items.length === 0 ? 'No files backed up to Glacier yet.' : 'Empty folder.'}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

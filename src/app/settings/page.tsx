@@ -1,8 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {
+  Settings as SettingsIcon, Key, HardDrive, Clock, Tv, Bell, Bot, Save, Check,
+  AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Shield, DollarSign, Info
+} from 'lucide-react';
 
-interface Settings {
+interface SettingsData {
   [key: string]: string;
 }
 
@@ -12,20 +16,20 @@ function SettingField({ label, name, value, type, onChange, placeholder }: {
 }) {
   return (
     <div>
-      <label className="block text-sm text-gray-400 mb-1">{label}</label>
+      <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>{label}</label>
       <input
         type={type || 'text'}
         value={value}
         onChange={e => onChange(name, e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+        className="input-field w-full px-3 py-2 text-sm"
       />
     </div>
   );
 }
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings>({});
+  const [settings, setSettings] = useState<SettingsData>({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -66,106 +70,180 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) return <div className="text-gray-500">Loading settings...</div>;
+  if (loading) return (
+    <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+      <SettingsIcon size={16} className="animate-spin" />
+      Loading settings...
+    </div>
+  );
+
+  const isError = message.includes('failed') || message.includes('Failed');
 
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-gray-500 text-sm">Configure AWS, NAS, and scheduling</p>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 flex items-center justify-center"
+            style={{
+              background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+              borderRadius: 'var(--radius-sm)',
+            }}
+          >
+            <SettingsIcon size={20} style={{ color: 'var(--accent)' }} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Settings</h1>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Configure AWS, NAS, and scheduling</p>
+          </div>
         </div>
         <button
           onClick={save}
           disabled={saving}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-lg font-medium text-sm"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all"
+          style={{
+            background: saving ? 'var(--accent-dim)' : 'var(--accent)',
+            color: saving ? 'var(--text-muted)' : 'var(--bg)',
+            borderRadius: 'var(--radius-sm)',
+            opacity: saving ? 0.7 : 1,
+          }}
         >
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? (
+            <>
+              <Save size={15} className="animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={15} />
+              Save Settings
+            </>
+          )}
         </button>
       </div>
 
       {message && (
-        <div className={'mb-6 p-3 rounded-lg text-sm ' +
-          (message.includes('failed') || message.includes('Failed')
-            ? 'bg-red-950 border border-red-800 text-red-300'
-            : 'bg-green-950 border border-green-800 text-green-300')}>
+        <div
+          className="mb-6 px-4 py-3 text-sm flex items-center gap-2"
+          style={{
+            background: isError
+              ? 'color-mix(in srgb, var(--error) 10%, transparent)'
+              : 'color-mix(in srgb, var(--success) 10%, transparent)',
+            border: `1px solid ${isError
+              ? 'color-mix(in srgb, var(--error) 30%, transparent)'
+              : 'color-mix(in srgb, var(--success) 30%, transparent)'}`,
+            color: isError ? 'var(--error)' : 'var(--success)',
+            borderRadius: 'var(--radius-sm)',
+          }}
+        >
+          {isError ? <AlertTriangle size={15} /> : <Check size={15} />}
           {message}
         </div>
       )}
 
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* AWS Section */}
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <section className="card p-6">
           <div className="flex items-start justify-between mb-4">
-            <h2 className="text-lg font-semibold">AWS Glacier Configuration</h2>
+            <div className="flex items-center gap-2">
+              <Key size={16} style={{ color: 'var(--accent)' }} />
+              <h2 className="text-sm font-semibold">AWS Glacier Configuration</h2>
+            </div>
             <button
               onClick={() => setShowAwsGuide(prev => !prev)}
-              className="text-xs text-blue-400 hover:text-blue-300 underline"
+              className="flex items-center gap-1 text-xs transition-colors"
+              style={{ color: 'var(--accent)' }}
             >
+              {showAwsGuide ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               {showAwsGuide ? 'Hide setup guide' : 'How to set this up?'}
             </button>
           </div>
 
           {showAwsGuide && (
-            <div className="mb-6 p-4 bg-gray-950 border border-gray-800 rounded-lg text-sm space-y-4">
-              <h3 className="font-semibold text-blue-400">AWS S3 Glacier Deep Archive Setup Guide</h3>
+            <div
+              className="mb-6 p-4 text-sm space-y-4"
+              style={{
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+              }}
+            >
+              <h3 className="font-semibold flex items-center gap-2" style={{ color: 'var(--accent)' }}>
+                <Info size={15} />
+                AWS S3 Glacier Deep Archive Setup Guide
+              </h3>
 
               <div>
-                <p className="font-medium text-white mb-1">Step 1: Create an S3 Bucket</p>
-                <ol className="list-decimal list-inside text-gray-400 space-y-1 ml-2">
-                  <li>Go to <span className="text-blue-400">AWS Console &rarr; S3</span></li>
-                  <li>Click <span className="text-white">Create bucket</span></li>
-                  <li>Enter a bucket name (e.g. <span className="text-yellow-300">my-nas-glacier-backup</span>)</li>
-                  <li>Select your region (e.g. <span className="text-yellow-300">eu-west-2</span> for London)</li>
-                  <li>Leave all other settings as default and click <span className="text-white">Create bucket</span></li>
+                <p className="font-medium mb-1" style={{ color: 'var(--text)' }}>Step 1: Create an S3 Bucket</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2" style={{ color: 'var(--text-secondary)' }}>
+                  <li>Go to <span style={{ color: 'var(--accent)' }}>AWS Console &rarr; S3</span></li>
+                  <li>Click <span style={{ color: 'var(--text)' }}>Create bucket</span></li>
+                  <li>Enter a bucket name (e.g. <span style={{ color: 'var(--warning)' }}>my-nas-glacier-backup</span>)</li>
+                  <li>Select your region (e.g. <span style={{ color: 'var(--warning)' }}>eu-west-2</span> for London)</li>
+                  <li>Leave all other settings as default and click <span style={{ color: 'var(--text)' }}>Create bucket</span></li>
                 </ol>
-                <p className="text-gray-500 mt-1 text-xs">Note: You do NOT need to set the default storage class. The app uses rclone which specifies Glacier Deep Archive per upload.</p>
+                <p className="mt-1 text-xs" style={{ color: 'var(--text-dim)' }}>Note: You do NOT need to set the default storage class. The app uses rclone which specifies Glacier Deep Archive per upload.</p>
               </div>
 
               <div>
-                <p className="font-medium text-white mb-1">Step 2: Create an IAM User</p>
-                <ol className="list-decimal list-inside text-gray-400 space-y-1 ml-2">
-                  <li>Go to <span className="text-blue-400">AWS Console &rarr; IAM &rarr; Users</span></li>
-                  <li>Click <span className="text-white">Create user</span></li>
-                  <li>Name it something like <span className="text-yellow-300">glacier-backup-uploader</span></li>
-                  <li>Click <span className="text-white">Next</span>, then <span className="text-white">Attach policies directly</span></li>
-                  <li>Search for and select <span className="text-yellow-300">AmazonS3FullAccess</span> (or create a custom policy for just your bucket)</li>
-                  <li>Click <span className="text-white">Next</span>, then <span className="text-white">Create user</span></li>
+                <p className="font-medium mb-1" style={{ color: 'var(--text)' }}>Step 2: Create an IAM User</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2" style={{ color: 'var(--text-secondary)' }}>
+                  <li>Go to <span style={{ color: 'var(--accent)' }}>AWS Console &rarr; IAM &rarr; Users</span></li>
+                  <li>Click <span style={{ color: 'var(--text)' }}>Create user</span></li>
+                  <li>Name it something like <span style={{ color: 'var(--warning)' }}>glacier-backup-uploader</span></li>
+                  <li>Click <span style={{ color: 'var(--text)' }}>Next</span>, then <span style={{ color: 'var(--text)' }}>Attach policies directly</span></li>
+                  <li>Search for and select <span style={{ color: 'var(--warning)' }}>AmazonS3FullAccess</span> (or create a custom policy for just your bucket)</li>
+                  <li>Click <span style={{ color: 'var(--text)' }}>Next</span>, then <span style={{ color: 'var(--text)' }}>Create user</span></li>
                 </ol>
               </div>
 
               <div>
-                <p className="font-medium text-white mb-1">Step 3: Create Access Keys</p>
-                <ol className="list-decimal list-inside text-gray-400 space-y-1 ml-2">
+                <p className="font-medium mb-1" style={{ color: 'var(--text)' }}>Step 3: Create Access Keys</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2" style={{ color: 'var(--text-secondary)' }}>
                   <li>Click on the user you just created</li>
-                  <li>Go to <span className="text-blue-400">Security credentials</span> tab</li>
-                  <li>Scroll down to <span className="text-white">Access keys</span> and click <span className="text-white">Create access key</span></li>
-                  <li>Select <span className="text-yellow-300">Application running outside AWS</span>, click Next</li>
-                  <li>Click <span className="text-white">Create access key</span></li>
-                  <li>Copy the <span className="text-green-400">Access key ID</span> and <span className="text-green-400">Secret access key</span> - paste them below</li>
+                  <li>Go to <span style={{ color: 'var(--accent)' }}>Security credentials</span> tab</li>
+                  <li>Scroll down to <span style={{ color: 'var(--text)' }}>Access keys</span> and click <span style={{ color: 'var(--text)' }}>Create access key</span></li>
+                  <li>Select <span style={{ color: 'var(--warning)' }}>Application running outside AWS</span>, click Next</li>
+                  <li>Click <span style={{ color: 'var(--text)' }}>Create access key</span></li>
+                  <li>Copy the <span style={{ color: 'var(--success)' }}>Access key ID</span> and <span style={{ color: 'var(--success)' }}>Secret access key</span> - paste them below</li>
                 </ol>
-                <p className="text-red-400 mt-1 text-xs">Important: Save the secret key now! You cannot view it again after closing this page.</p>
+                <p className="mt-1 text-xs" style={{ color: 'var(--error)' }}>Important: Save the secret key now! You cannot view it again after closing this page.</p>
               </div>
 
               <div>
-                <p className="font-medium text-white mb-1">Step 4: Fill in the fields below and click Save</p>
-                <p className="text-gray-400">The app will test the connection when you save. If successful, you are ready to start uploading.</p>
+                <p className="font-medium mb-1" style={{ color: 'var(--text)' }}>Step 4: Fill in the fields below and click Save</p>
+                <p style={{ color: 'var(--text-secondary)' }}>The app will test the connection when you save. If successful, you are ready to start uploading.</p>
               </div>
 
-              <div className="pt-2 border-t border-gray-800">
-                <p className="font-medium text-white mb-1">Costs (Glacier Deep Archive)</p>
-                <ul className="text-gray-400 space-y-0.5 ml-2">
-                  <li>&bull; <span className="text-white">Storage:</span> ~$0.99/TB/month (~$1/TB)</li>
-                  <li>&bull; <span className="text-white">Upload (PUT):</span> $0.05 per 1,000 requests (one-time)</li>
-                  <li>&bull; <span className="text-white">Retrieval:</span> $0.02/GB + 12-48 hour delay (emergency use only)</li>
-                  <li>&bull; <span className="text-white">Example:</span> 9 TB backup = ~$9/month, ~$108/year</li>
+              <div className="pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+                <p className="font-medium mb-1 flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+                  <DollarSign size={14} style={{ color: 'var(--accent)' }} />
+                  Costs (Glacier Deep Archive)
+                </p>
+                <ul className="space-y-0.5 ml-2" style={{ color: 'var(--text-secondary)' }}>
+                  <li>&bull; <span style={{ color: 'var(--text)' }}>Storage:</span> ~$0.99/TB/month (~$1/TB)</li>
+                  <li>&bull; <span style={{ color: 'var(--text)' }}>Upload (PUT):</span> $0.05 per 1,000 requests (one-time)</li>
+                  <li>&bull; <span style={{ color: 'var(--text)' }}>Retrieval:</span> $0.02/GB + 12-48 hour delay (emergency use only)</li>
+                  <li>&bull; <span style={{ color: 'var(--text)' }}>Example:</span> 9 TB backup = ~$9/month, ~$108/year</li>
                 </ul>
               </div>
 
-              <div className="pt-2 border-t border-gray-800">
-                <p className="font-medium text-white mb-1">Optional: Restrict permissions to one bucket</p>
-                <p className="text-gray-400 mb-2">Instead of AmazonS3FullAccess, create a custom IAM policy:</p>
-                <pre className="bg-gray-900 p-3 rounded text-xs text-gray-300 overflow-x-auto">{`{
+              <div className="pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+                <p className="font-medium mb-1 flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+                  <Shield size={14} style={{ color: 'var(--accent)' }} />
+                  Optional: Restrict permissions to one bucket
+                </p>
+                <p className="mb-2" style={{ color: 'var(--text-secondary)' }}>Instead of AmazonS3FullAccess, create a custom IAM policy:</p>
+                <pre
+                  className="p-3 text-xs overflow-x-auto"
+                  style={{
+                    background: 'var(--bg)',
+                    color: 'var(--text-secondary)',
+                    borderRadius: 'var(--radius-xs)',
+                    fontFamily: 'var(--font-mono)',
+                    border: '1px solid var(--border)',
+                  }}
+                >{`{
   "Version": "2012-10-17",
   "Statement": [{
     "Effect": "Allow",
@@ -189,16 +267,22 @@ export default function SettingsPage() {
         </section>
 
         {/* NAS Section */}
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">NAS Configuration</h2>
+        <section className="card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <HardDrive size={16} style={{ color: 'var(--accent)' }} />
+            <h2 className="text-sm font-semibold">NAS Configuration</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SettingField label="NAS Mount Path" name="nas_mount_path" value={settings.nas_mount_path || '/mnt/nas'} onChange={updateField} />
           </div>
         </section>
 
         {/* Schedule Section */}
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Upload Schedule</h2>
+        <section className="card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock size={16} style={{ color: 'var(--accent)' }} />
+            <h2 className="text-sm font-semibold">Upload Schedule</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <SettingField label="Start Hour (24h)" name="upload_start_hour" value={settings.upload_start_hour || '23'} type="number" onChange={updateField} />
             <SettingField label="End Hour (24h)" name="upload_end_hour" value={settings.upload_end_hour || '7'} type="number" onChange={updateField} />
@@ -207,8 +291,11 @@ export default function SettingsPage() {
         </section>
 
         {/* Sonarr/Radarr Section */}
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Sonarr / Radarr</h2>
+        <section className="card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Tv size={16} style={{ color: 'var(--accent)' }} />
+            <h2 className="text-sm font-semibold">Sonarr / Radarr</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SettingField label="Sonarr URL" name="sonarr_url" value={settings.sonarr_url || ''} onChange={updateField} placeholder="http://192.168.3.98:8989" />
             <SettingField label="Sonarr API Key" name="sonarr_api_key" value={settings.sonarr_api_key || ''} onChange={updateField} />
@@ -218,28 +305,33 @@ export default function SettingsPage() {
         </section>
 
         {/* Notifications Section */}
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Notifications</h2>
+        <section className="card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell size={16} style={{ color: 'var(--accent)' }} />
+            <h2 className="text-sm font-semibold">Notifications</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SettingField label="Webhook URL (Discord/Slack)" name="notification_webhook_url" value={settings.notification_webhook_url || ''} onChange={updateField} placeholder="https://discord.com/api/webhooks/..." />
             <SettingField label="Email (optional)" name="notification_email" value={settings.notification_email || ''} onChange={updateField} placeholder="you@example.com" />
           </div>
           <div className="flex gap-6 mt-4">
-            <label className="flex items-center gap-2 text-sm text-gray-400">
+            <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
               <input
                 type="checkbox"
                 checked={settings.notification_on_complete === 'true'}
                 onChange={e => updateField('notification_on_complete', e.target.checked ? 'true' : 'false')}
                 className="rounded"
+                style={{ accentColor: 'var(--accent)' }}
               />
               Notify on upload complete
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-400">
+            <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
               <input
                 type="checkbox"
                 checked={settings.notification_on_error === 'true'}
                 onChange={e => updateField('notification_on_error', e.target.checked ? 'true' : 'false')}
                 className="rounded"
+                style={{ accentColor: 'var(--accent)' }}
               />
               Notify on errors
             </label>
@@ -247,22 +339,32 @@ export default function SettingsPage() {
         </section>
 
         {/* AI Assistant Section */}
-        <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">AI Assistant</h2>
-          <p className="text-sm text-gray-500 mb-4">
+        <section className="card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Bot size={16} style={{ color: 'var(--accent)' }} />
+            <h2 className="text-sm font-semibold">AI Assistant</h2>
+          </div>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-dim)' }}>
             Add your own Claude API key to enable the AI assistant. Get one at{' '}
-            <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+            <a
+              href="https://console.anthropic.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 hover:underline"
+              style={{ color: 'var(--accent)' }}
+            >
               console.anthropic.com
+              <ExternalLink size={12} />
             </a>
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SettingField label="Claude API Key" name="claude_api_key" value={settings.claude_api_key || ''} type="password" onChange={updateField} placeholder="sk-ant-..." />
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Model</label>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Model</label>
               <select
                 value={settings.claude_model || 'claude-sonnet-4-5-20250929'}
                 onChange={e => updateField('claude_model', e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                className="input-field w-full px-3 py-2 text-sm"
               >
                 <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — $0.80/$4 per MTok (fastest, cheapest)</option>
                 <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 — $3/$15 per MTok (recommended)</option>
@@ -270,7 +372,7 @@ export default function SettingsPage() {
               </select>
             </div>
           </div>
-          <p className="text-xs text-gray-600 mt-3">Cost tracking is shown on the AI Assistant page. Pricing: input/output per million tokens.</p>
+          <p className="text-xs mt-3" style={{ color: 'var(--text-dim)' }}>Cost tracking is shown on the AI Assistant page. Pricing: input/output per million tokens.</p>
         </section>
       </div>
     </div>

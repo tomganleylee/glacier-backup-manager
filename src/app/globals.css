@@ -2,12 +2,311 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+/* ============================================
+   THEME VARIABLES
+   ============================================ */
+
+/* Clean Professional Theme (default) */
+:root {
+  --bg: #030712;
+  --bg-card: #0f1117;
+  --bg-card-hover: #161923;
+  --bg-elevated: #1a1d28;
+  --border: #1e2231;
+  --border-hover: #2d3348;
+  --accent: #3b82f6;
+  --accent-dim: #1e3a5f;
+  --accent-glow: rgba(59, 130, 246, 0.15);
+  --accent-secondary: #22c55e;
+  --accent-secondary-dim: #14532d;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #475569;
+  --success: #22c55e;
+  --warning: #eab308;
+  --error: #ef4444;
+  --info: #3b82f6;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
+  --gradient-accent: linear-gradient(135deg, #3b82f6, #6366f1);
+  --scanline-opacity: 0;
+  --glow-spread: 0px;
+  --nav-active-bg: rgba(59, 130, 246, 0.1);
+  --nav-active-border: #3b82f6;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #111827; }
-::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+/* Cyberpunk Theme */
+[data-theme="cyberpunk"] {
+  --bg: #0a0a0f;
+  --bg-card: #12121a;
+  --bg-card-hover: #1a1a26;
+  --bg-elevated: #1c1c2e;
+  --border: #2a2a3a;
+  --border-hover: #3a3a50;
+  --accent: #00ff88;
+  --accent-dim: #003d21;
+  --accent-glow: rgba(0, 255, 136, 0.12);
+  --accent-secondary: #ff00ff;
+  --accent-secondary-dim: #3d003d;
+  --text: #e0e0e0;
+  --text-secondary: #8b8ba0;
+  --text-muted: #6b7280;
+  --text-dim: #4a4a5e;
+  --success: #00ff88;
+  --warning: #ffaa00;
+  --error: #ff3366;
+  --info: #00d4ff;
+  --font-body: 'JetBrains Mono', 'Fira Code', 'Share Tech Mono', monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --radius: 2px;
+  --radius-sm: 2px;
+  --radius-xs: 1px;
+  --shadow-card: 0 0 1px rgba(0, 255, 136, 0.1);
+  --shadow-card-hover: 0 0 8px rgba(0, 255, 136, 0.15), 0 0 20px rgba(0, 255, 136, 0.05);
+  --gradient-accent: linear-gradient(135deg, #00ff88, #00d4ff);
+  --scanline-opacity: 0.03;
+  --glow-spread: 10px;
+  --nav-active-bg: rgba(0, 255, 136, 0.08);
+  --nav-active-border: #00ff88;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Scanline overlay (cyberpunk only) */
+[data-theme="cyberpunk"] main::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+  opacity: var(--scanline-opacity);
+}
+
+/* Grid pattern background (cyberpunk only) */
+[data-theme="cyberpunk"] main {
+  background-image:
+    linear-gradient(rgba(0, 255, 136, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 136, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--border-hover);
+}
+
+.card-interactive:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+/* Stat cards */
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-accent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+/* Input fields */
+.input-field {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+
+.input-field:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.input-field::placeholder {
+  color: var(--text-dim);
+}
+
+/* Buttons */
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 var(--glow-spread) var(--accent-glow);
+}
+
+/* Tables */
+.table-row {
+  transition: background-color 0.1s ease;
+}
+
+.table-row:hover {
+  background: var(--bg-card-hover);
+}
+
+/* Badge base */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Neon text (cyberpunk) */
+[data-theme="cyberpunk"] .neon-text {
+  text-shadow: 0 0 7px var(--accent), 0 0 20px var(--accent-glow);
+}
+
+[data-theme="cyberpunk"] .neon-border {
+  box-shadow: 0 0 5px var(--accent-glow), inset 0 0 5px var(--accent-glow);
+}
+
+/* Glitch animation (cyberpunk) */
+@keyframes glitch {
+  0%, 94% { transform: translate(0); }
+  95% { transform: translate(-2px, 1px); }
+  96% { transform: translate(2px, -1px); }
+  97% { transform: translate(-1px, -1px); }
+  98% { transform: translate(1px, 1px); }
+  100% { transform: translate(0); }
+}
+
+[data-theme="cyberpunk"] .glitch-text {
+  animation: glitch 4s infinite;
+}
+
+[data-theme="cyberpunk"] .glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 2px;
+  top: 0;
+  color: #ff00ff;
+  opacity: 0;
+  clip-path: inset(0 0 50% 0);
+  animation: glitch-clip 4s infinite;
+}
+
+@keyframes glitch-clip {
+  0%, 94% { opacity: 0; }
+  95%, 98% { opacity: 0.3; }
+  100% { opacity: 0; }
+}
+
+/* Pulse ring */
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.pulse-dot {
+  animation: pulse-ring 2s infinite;
+}
+
+/* Progress bar shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.progress-shimmer {
+  background: linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Loading skeleton */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+.skeleton {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Cyberpunk chamfered corners */
+[data-theme="cyberpunk"] .cyber-card {
+  clip-path: polygon(
+    0 8px, 8px 0,
+    calc(100% - 8px) 0, 100% 8px,
+    100% calc(100% - 8px), calc(100% - 8px) 100%,
+    8px 100%, 0 calc(100% - 8px)
+  );
+}
+
+/* Google Fonts import for cyberpunk */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');

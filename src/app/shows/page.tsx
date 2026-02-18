@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Tv, RefreshCw, Search, Check, AlertCircle, Loader2, ScanLine, Zap } from 'lucide-react';
 
 interface Show {
   id: number;
@@ -40,36 +41,66 @@ function formatBytes(bytes: number): string {
 }
 
 function RarityBadge({ rarity }: { rarity: string }) {
-  const colors: Record<string, string> = {
-    rare: 'bg-red-900 text-red-300 border-red-700',
-    moderate: 'bg-yellow-900 text-yellow-300 border-yellow-700',
-    easy: 'bg-green-900 text-green-300 border-green-700',
-    unknown: 'bg-gray-800 text-gray-400 border-gray-700',
+  const colorMap: Record<string, string> = {
+    rare: 'var(--error)',
+    moderate: 'var(--warning)',
+    easy: 'var(--success)',
+    unknown: 'var(--text-muted)',
   };
+  const color = colorMap[rarity] || colorMap.unknown;
   return (
-    <span className={'px-2 py-0.5 rounded text-xs font-medium border ' + (colors[rarity] || colors.unknown)}>
+    <span
+      className="badge"
+      style={{
+        color: color,
+        background: `color-mix(in srgb, ${color} 15%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+      }}
+    >
       {rarity}
     </span>
   );
 }
 
 function CodecBadge({ codec, resolution }: { codec: string | null; resolution: string | null }) {
-  if (!codec) return <span className="text-gray-600 text-xs">-</span>;
-  const codecColors: Record<string, string> = {
-    xvid: 'text-red-400',
-    mpeg4: 'text-red-400',
-    h264: 'text-yellow-400',
-    hevc: 'text-green-400',
-    av1: 'text-green-400',
+  if (!codec) return <span className="text-xs" style={{ color: 'var(--text-dim)' }}>-</span>;
+  const codecColorMap: Record<string, string> = {
+    xvid: 'var(--error)',
+    mpeg4: 'var(--error)',
+    h264: 'var(--warning)',
+    hevc: 'var(--success)',
+    av1: 'var(--success)',
   };
-  const color = codecColors[codec.toLowerCase()] || 'text-gray-400';
+  const color = codecColorMap[codec.toLowerCase()] || 'var(--text-muted)';
   return (
     <span className="text-xs">
-      <span className={color}>{codec.toUpperCase()}</span>
+      <span style={{ color }}>{codec.toUpperCase()}</span>
       {resolution && resolution !== 'unknown' && (
-        <span className="text-gray-500 ml-1">{resolution}</span>
+        <span className="ml-1" style={{ color: 'var(--text-dim)' }}>{resolution}</span>
       )}
     </span>
+  );
+}
+
+function ShowsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <div className="skeleton h-7 w-32 mb-2" />
+          <div className="skeleton h-4 w-72" />
+        </div>
+        <div className="flex gap-2">
+          <div className="skeleton h-9 w-28 rounded-[var(--radius-sm)]" />
+          <div className="skeleton h-9 w-36 rounded-[var(--radius-sm)]" />
+        </div>
+      </div>
+      <div className="flex gap-4">
+        <div className="skeleton h-9 w-64 rounded-[var(--radius-sm)]" />
+        <div className="skeleton h-9 flex-1 rounded-[var(--radius-sm)]" />
+      </div>
+      <div className="skeleton h-96 rounded-[var(--radius)]" />
+    </div>
   );
 }
 
@@ -179,15 +210,21 @@ export default function ShowsPage() {
     estimatedSaved: shows.reduce((sum, s) => sum + (s.size_bytes * estimateSavings(s.codec)), 0),
   };
 
+  if (loading) return <ShowsSkeleton />;
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Shows</h1>
-          <p className="text-gray-500 text-sm">
+          <div className="flex items-center gap-2">
+            <Tv size={20} style={{ color: 'var(--accent)' }} />
+            <h1 className="text-xl font-bold tracking-tight">Shows</h1>
+          </div>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {stats.total} shows, {stats.backupEnabled} selected for backup ({formatBytes(stats.backupSize)})
             {stats.estimatedSaved > 0 && (
-              <span className="text-green-400"> | Est. savings with transcode: {formatBytes(stats.estimatedSaved)}</span>
+              <span style={{ color: 'var(--success)' }}> | Est. savings with transcode: {formatBytes(stats.estimatedSaved)}</span>
             )}
           </p>
         </div>
@@ -195,134 +232,187 @@ export default function ShowsPage() {
           <button
             onClick={scanCodecs}
             disabled={scanning}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-lg font-medium text-sm"
+            className="px-4 py-2 rounded-[var(--radius-sm)] font-medium text-sm flex items-center gap-2 transition-all duration-150 disabled:opacity-50"
+            style={{
+              background: 'color-mix(in srgb, var(--info) 15%, transparent)',
+              color: 'var(--info)',
+              border: '1px solid color-mix(in srgb, var(--info) 30%, transparent)',
+            }}
           >
+            {scanning ? <Loader2 size={14} className="animate-spin" /> : <ScanLine size={14} />}
             {scanning ? 'Scanning...' : 'Scan Codecs'}
           </button>
           <button
             onClick={syncFromSonarr}
             disabled={syncing}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium text-sm"
+            className="px-4 py-2 rounded-[var(--radius-sm)] font-medium text-sm flex items-center gap-2 transition-all duration-150 disabled:opacity-50"
+            style={{
+              background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+              color: 'var(--accent)',
+              border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
+            }}
           >
+            {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             {syncing ? 'Syncing...' : 'Sync from Sonarr'}
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <div className="flex gap-1 bg-gray-900 rounded-lg p-1">
+      <div className="flex gap-4">
+        <div
+          className="flex gap-1 p-1 rounded-[var(--radius-sm)]"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+        >
           {['all', 'rare', 'moderate', 'easy'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={'px-3 py-1.5 rounded text-sm ' + (filter === f ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white')}
+              className="px-3 py-1.5 rounded-[var(--radius-xs)] text-sm font-medium transition-all duration-150"
+              style={{
+                background: filter === f ? 'var(--bg-elevated)' : 'transparent',
+                color: filter === f ? 'var(--accent)' : 'var(--text-muted)',
+              }}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
         </div>
-        <input
-          type="text"
-          placeholder="Search shows..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none"
-        />
+        <div className="flex-1 relative">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2"
+            style={{ color: 'var(--text-dim)' }}
+          />
+          <input
+            type="text"
+            placeholder="Search shows..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="input-field w-full pl-9 pr-3 py-1.5 text-sm"
+          />
+        </div>
       </div>
 
+      {/* Transcode message */}
       {transcodeMsg && (
-        <div className="mb-4 p-3 rounded-lg text-sm bg-blue-950 border border-blue-800 text-blue-300">
+        <div
+          className="flex items-center gap-2 p-3 rounded-[var(--radius-sm)] text-sm"
+          style={{
+            background: 'color-mix(in srgb, var(--info) 10%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--info) 25%, transparent)',
+            color: 'var(--info)',
+          }}
+        >
+          <AlertCircle size={14} />
           {transcodeMsg}
         </div>
       )}
 
-      {loading ? (
-        <div className="text-gray-500">Loading shows...</div>
-      ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-800 text-gray-400">
-                <th className="p-3 text-left">Backup</th>
-                <th className="p-3 text-left">Title</th>
-                <th className="p-3 text-center">Rarity</th>
-                <th className="p-3 text-center">Codec</th>
-                <th className="p-3 text-right">Size</th>
-                <th className="p-3 text-right">Est. After</th>
-                <th className="p-3 text-right">Savings</th>
-                <th className="p-3 text-right">Episodes</th>
-                <th className="p-3 text-center">Keep Best</th>
-                <th className="p-3 text-center">Transcode</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredShows.map(show => {
-                const reduction = estimateSavings(show.codec);
-                const estAfter = show.size_bytes * (1 - reduction);
-                const savingsBytes = show.size_bytes * reduction;
-                const savingsPct = Math.round(reduction * 100);
-                const alreadyBest = show.codec === 'hevc' || show.codec === 'av1';
-                return (
-                  <tr key={show.id} className="border-b border-gray-800/50 hover:bg-gray-800/50">
-                    <td className="p-3">
-                      <input
-                        type="checkbox"
-                        checked={!!show.backup_enabled}
-                        onChange={() => toggleBackup(show)}
-                        className="rounded"
-                      />
-                    </td>
-                    <td className="p-3 font-medium">{show.title}</td>
-                    <td className="p-3 text-center"><RarityBadge rarity={show.rarity} /></td>
-                    <td className="p-3 text-center"><CodecBadge codec={show.codec} resolution={show.resolution} /></td>
-                    <td className="p-3 text-right text-gray-400">{formatBytes(show.size_bytes)}</td>
-                    <td className="p-3 text-right text-gray-400">
-                      {alreadyBest ? (
-                        <span className="text-green-400 text-xs">already optimal</span>
-                      ) : show.size_bytes > 0 ? (
-                        formatBytes(estAfter)
-                      ) : '-'}
-                    </td>
-                    <td className="p-3 text-right">
-                      {alreadyBest ? (
-                        <span className="text-gray-600">-</span>
-                      ) : savingsBytes > 0 ? (
-                        <span className="text-green-400">{savingsPct}% ({formatBytes(savingsBytes)})</span>
-                      ) : '-'}
-                    </td>
-                    <td className="p-3 text-right text-gray-400">{show.episode_count}</td>
-                    <td className="p-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={!!show.keep_best_quality}
-                        onChange={() => toggleKeepBest(show)}
-                        className="rounded"
-                        title="Skip transcoding, backup original quality"
-                      />
-                    </td>
-                    <td className="p-3 text-center">
-                      <button
-                        onClick={() => queueTranscode(show)}
-                        disabled={queuingId === show.id || !!show.keep_best_quality || alreadyBest}
-                        className="px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 rounded text-xs font-medium"
-                        title={alreadyBest ? 'Already in optimal codec' : 'Queue all episodes for transcode'}
-                      >
-                        {queuingId === show.id ? '...' : 'Queue'}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filteredShows.length === 0 && (
-                <tr><td colSpan={10} className="p-8 text-center text-gray-500">
+      {/* Table */}
+      <div className="card overflow-hidden overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+              <th className="p-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Backup</th>
+              <th className="p-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Title</th>
+              <th className="p-3 text-center text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Rarity</th>
+              <th className="p-3 text-center text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Codec</th>
+              <th className="p-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Size</th>
+              <th className="p-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Est. After</th>
+              <th className="p-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Savings</th>
+              <th className="p-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Episodes</th>
+              <th className="p-3 text-center text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Keep Best</th>
+              <th className="p-3 text-center text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Transcode</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredShows.map(show => {
+              const reduction = estimateSavings(show.codec);
+              const estAfter = show.size_bytes * (1 - reduction);
+              const savingsBytes = show.size_bytes * reduction;
+              const savingsPct = Math.round(reduction * 100);
+              const alreadyBest = show.codec === 'hevc' || show.codec === 'av1';
+              return (
+                <tr
+                  key={show.id}
+                  className="table-row"
+                  style={{ borderBottom: '1px solid color-mix(in srgb, var(--border) 50%, transparent)' }}
+                >
+                  <td className="p-3">
+                    <input
+                      type="checkbox"
+                      checked={!!show.backup_enabled}
+                      onChange={() => toggleBackup(show)}
+                      className="rounded"
+                    />
+                  </td>
+                  <td className="p-3 font-medium" style={{ color: 'var(--text)' }}>{show.title}</td>
+                  <td className="p-3 text-center"><RarityBadge rarity={show.rarity} /></td>
+                  <td className="p-3 text-center"><CodecBadge codec={show.codec} resolution={show.resolution} /></td>
+                  <td className="p-3 text-right" style={{ color: 'var(--text-secondary)' }}>{formatBytes(show.size_bytes)}</td>
+                  <td className="p-3 text-right" style={{ color: 'var(--text-secondary)' }}>
+                    {alreadyBest ? (
+                      <span className="text-xs flex items-center justify-end gap-1" style={{ color: 'var(--success)' }}>
+                        <Check size={12} />
+                        optimal
+                      </span>
+                    ) : show.size_bytes > 0 ? (
+                      formatBytes(estAfter)
+                    ) : '-'}
+                  </td>
+                  <td className="p-3 text-right">
+                    {alreadyBest ? (
+                      <span style={{ color: 'var(--text-dim)' }}>-</span>
+                    ) : savingsBytes > 0 ? (
+                      <span style={{ color: 'var(--success)' }}>{savingsPct}% ({formatBytes(savingsBytes)})</span>
+                    ) : '-'}
+                  </td>
+                  <td className="p-3 text-right" style={{ color: 'var(--text-secondary)' }}>{show.episode_count}</td>
+                  <td className="p-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={!!show.keep_best_quality}
+                      onChange={() => toggleKeepBest(show)}
+                      className="rounded"
+                      title="Skip transcoding, backup original quality"
+                    />
+                  </td>
+                  <td className="p-3 text-center">
+                    <button
+                      onClick={() => queueTranscode(show)}
+                      disabled={queuingId === show.id || !!show.keep_best_quality || alreadyBest}
+                      className="px-2 py-1 rounded-[var(--radius-xs)] text-xs font-medium flex items-center gap-1 mx-auto transition-all duration-150 disabled:opacity-40"
+                      style={{
+                        background: (queuingId === show.id || !!show.keep_best_quality || alreadyBest)
+                          ? 'color-mix(in srgb, var(--text-dim) 15%, transparent)'
+                          : 'color-mix(in srgb, var(--accent) 15%, transparent)',
+                        color: (queuingId === show.id || !!show.keep_best_quality || alreadyBest)
+                          ? 'var(--text-dim)'
+                          : 'var(--accent)',
+                        border: `1px solid ${(queuingId === show.id || !!show.keep_best_quality || alreadyBest)
+                          ? 'color-mix(in srgb, var(--text-dim) 20%, transparent)'
+                          : 'color-mix(in srgb, var(--accent) 30%, transparent)'}`,
+                      }}
+                      title={alreadyBest ? 'Already in optimal codec' : 'Queue all episodes for transcode'}
+                    >
+                      {queuingId === show.id ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                      {queuingId === show.id ? '...' : 'Queue'}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {filteredShows.length === 0 && (
+              <tr>
+                <td colSpan={10} className="p-8 text-center" style={{ color: 'var(--text-muted)' }}>
                   {shows.length === 0 ? 'No shows. Click "Sync from Sonarr" to import.' : 'No matches.'}
-                </td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
